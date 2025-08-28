@@ -1,17 +1,19 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    SafeAreaView,
+  Appearance,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
+    ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colorPresets } from '../constants/colorPresets';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import {
-    setBackgroundStyle,
     setColors,
     setFontFamily,
     setFontSize,
@@ -19,19 +21,50 @@ import {
     toggleAutoSave,
     toggleHapticFeedback,
 } from '../store/slices/settingsSlice';
-import { BackgroundStyle, FontFamily, Theme } from '../types/settings';
+import { FontFamily, Theme } from '../types/settings';
+import { useAuth } from '../context/AuthContext';
+import { AuthModal } from '../components/AuthModal';
 
 export const CustomizationScreen: React.FC = () => {
   const dispatch = useAppDispatch();
   const { personalization } = useAppSelector((state) => state.settings);
+  const { session, signOut } = useAuth();
+  const [authVisible, setAuthVisible] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  
+  // State to trigger re-render when system theme changes
+  const [systemColorScheme, setSystemColorScheme] = useState(Appearance.getColorScheme());
 
-  const backgroundOptions: { label: string; value: BackgroundStyle }[] = [
-    { label: 'Blank', value: 'blank' },
-    { label: 'Lined', value: 'lined' },
-    { label: 'Dotted', value: 'dotted' },
-    { label: 'Grid', value: 'grid' },
-    { label: 'Minimal Lines', value: 'minimal-lines' },
-  ];
+  // Listen for system theme changes
+  useEffect(() => {
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setSystemColorScheme(colorScheme);
+    });
+
+    return () => subscription?.remove();
+  }, []);
+
+  // Determine actual theme (handle auto/system theme)
+  const getActualTheme = () => {
+    if (personalization.theme === 'auto') {
+      return systemColorScheme === 'dark' ? 'dark' : 'light';
+    }
+    return personalization.theme;
+  };
+
+  const actualTheme = getActualTheme();
+
+  // Use neutral screen background - consistent with JournalScreen
+  const screenBackgroundColor = actualTheme === 'dark' ? '#000000' : '#F5F5F5';
+  
+  // Use neutral colors for text elements to ensure visibility
+  const screenTextColor = actualTheme === 'dark' ? '#FFFFFF' : '#1A1A1A';
+  const screenAccentColor = actualTheme === 'dark' ? '#0A84FF' : '#007AFF';
+
+  // Removed lined background option - keeping only blank clean page
+  // const backgroundOptions: { label: string; value: BackgroundStyle }[] = [
+  //   { label: 'Blank', value: 'blank' },
+  // ];
 
   const fontOptions: { label: string; value: FontFamily }[] = [
     { label: 'Default', value: 'default' },
@@ -42,29 +75,31 @@ export const CustomizationScreen: React.FC = () => {
   ];
 
   const themeOptions: { label: string; value: Theme }[] = [
-    { label: 'Auto', value: 'auto' },
+    { label: 'System', value: 'auto' },
     { label: 'Light', value: 'light' },
     { label: 'Dark', value: 'dark' },
-    { label: 'Warm', value: 'warm' },
-    { label: 'Cool', value: 'cool' },
   ];
 
-  const colorPresets = [
-    { name: 'Classic', bg: '#FFFFFF', text: '#1A1A1A', accent: '#007AFF', line: '#E5E5E7' },
-    { name: 'Dark', bg: '#1A1A1A', text: '#FFFFFF', accent: '#0A84FF', line: '#3A3A3C' },
-    { name: 'Warm', bg: '#FFF8F0', text: '#2D1810', accent: '#D2691E', line: '#E6D2C0' },
-    { name: 'Cool', bg: '#F0F8FF', text: '#1E3A5F', accent: '#4682B4', line: '#C0D9F0' },
-    { name: 'Mint', bg: '#F0FFF8', text: '#0F3B2A', accent: '#20B2AA', line: '#C0F0E8' },
-  ];
+  
 
   const renderSection = (title: string, children: React.ReactNode) => (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: personalization.textColor }]}>
+      <Text style={[styles.sectionTitle, { color: screenTextColor }]}>
         {title}
       </Text>
       {children}
     </View>
   );
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   const renderOptionGrid = <T extends string>(
     options: { label: string; value: T }[],
@@ -79,9 +114,9 @@ export const CustomizationScreen: React.FC = () => {
             styles.optionButton,
             {
               backgroundColor: currentValue === option.value 
-                ? personalization.accentColor 
-                : personalization.backgroundColor,
-              borderColor: personalization.accentColor,
+                ? screenAccentColor 
+                : screenBackgroundColor,
+              borderColor: screenAccentColor,
             }
           ]}
           onPress={() => onSelect(option.value)}
@@ -91,8 +126,8 @@ export const CustomizationScreen: React.FC = () => {
               styles.optionText,
               {
                 color: currentValue === option.value 
-                  ? personalization.backgroundColor 
-                  : personalization.textColor,
+                  ? screenBackgroundColor 
+                  : screenTextColor,
               }
             ]}
           >
@@ -130,7 +165,7 @@ export const CustomizationScreen: React.FC = () => {
 
   const renderFontSizeSlider = () => (
     <View style={styles.sliderContainer}>
-      <Text style={[styles.sliderLabel, { color: personalization.textColor }]}>
+      <Text style={[styles.sliderLabel, { color: screenTextColor }]}>
         Font Size: {personalization.fontSize}px
       </Text>
       <View style={styles.sliderButtons}>
@@ -141,9 +176,9 @@ export const CustomizationScreen: React.FC = () => {
               styles.sizeButton,
               {
                 backgroundColor: personalization.fontSize === size 
-                  ? personalization.accentColor 
-                  : personalization.backgroundColor,
-                borderColor: personalization.accentColor,
+                  ? screenAccentColor 
+                  : screenBackgroundColor,
+                borderColor: screenAccentColor,
               }
             ]}
             onPress={() => dispatch(setFontSize(size))}
@@ -153,8 +188,8 @@ export const CustomizationScreen: React.FC = () => {
                 styles.sizeText,
                 {
                   color: personalization.fontSize === size 
-                    ? personalization.backgroundColor 
-                    : personalization.textColor,
+                    ? screenBackgroundColor 
+                    : screenTextColor,
                   fontSize: size * 0.7,
                 }
               ]}
@@ -175,10 +210,10 @@ export const CustomizationScreen: React.FC = () => {
   ) => (
     <TouchableOpacity style={styles.toggleRow} onPress={onToggle}>
       <View style={styles.toggleContent}>
-        <Text style={[styles.toggleTitle, { color: personalization.textColor }]}>
+        <Text style={[styles.toggleTitle, { color: screenTextColor }]}>
           {title}
         </Text>
-        <Text style={[styles.toggleDescription, { color: `${personalization.textColor}80` }]}>
+        <Text style={[styles.toggleDescription, { color: `${screenTextColor}80` }]}>
           {description}
         </Text>
       </View>
@@ -186,7 +221,7 @@ export const CustomizationScreen: React.FC = () => {
         style={[
           styles.toggle,
           {
-            backgroundColor: value ? personalization.accentColor : `${personalization.textColor}20`,
+            backgroundColor: value ? screenAccentColor : `${screenTextColor}20`,
           }
         ]}
       >
@@ -204,8 +239,8 @@ export const CustomizationScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: personalization.backgroundColor }]}>
-      <View style={[styles.header, { borderBottomColor: personalization.lineColor }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: screenBackgroundColor }]}> 
+      <View style={[styles.header, { borderBottomColor: `${screenTextColor}20` }]}> 
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -213,21 +248,34 @@ export const CustomizationScreen: React.FC = () => {
           <MaterialIcons
             name="arrow-back"
             size={24}
-            color={personalization.accentColor}
+            color={screenAccentColor}
           />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: personalization.textColor }]}>
+        <Text style={[styles.headerTitle, { color: screenTextColor }]}> 
           Personalization
         </Text>
-        <View style={styles.headerSpacer} />
+        {session ? (
+          <TouchableOpacity
+            style={[styles.authButton, signingOut && { opacity: 0.7 }]}
+            onPress={handleSignOut}
+            accessibilityLabel="Sign out"
+            disabled={signingOut}
+          >
+            {signingOut ? (
+              <ActivityIndicator size="small" color={screenAccentColor} />
+            ) : (
+              <Text style={[styles.authButtonText, { color: screenAccentColor }]}>Sign out</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.authButton} onPress={() => setAuthVisible(true)} accessibilityLabel="Sign in or Sign up">
+            <Text style={[styles.authButtonText, { color: screenAccentColor }]}>Sign in/up</Text>
+          </TouchableOpacity>
+        )}
       </View>
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {renderSection('Background Style', 
-          renderOptionGrid(backgroundOptions, personalization.backgroundStyle, (value) => 
-            dispatch(setBackgroundStyle(value))
-          )
-        )}
+        {/* Background Style section removed - using only blank background */}
 
         {renderSection('Font Family', 
           renderOptionGrid(fontOptions, personalization.fontFamily, (value) => 
@@ -237,7 +285,7 @@ export const CustomizationScreen: React.FC = () => {
 
         {renderSection('Font Size', renderFontSizeSlider())}
 
-        {renderSection('Color Theme', renderColorPresets())}
+        {/* Color Theme moved to quick-access row in JournalScreen */}
 
         {renderSection('App Theme', 
           renderOptionGrid(themeOptions, personalization.theme, (value) => 
@@ -262,6 +310,8 @@ export const CustomizationScreen: React.FC = () => {
           </View>
         ))}
       </ScrollView>
+
+      <AuthModal visible={authVisible} onClose={() => setAuthVisible(false)} />
     </SafeAreaView>
   );
 };
@@ -289,6 +339,16 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 40, // Same width as back button for center alignment
+  },
+  authButton: {
+    padding: 8,
+    borderRadius: 8,
+    minWidth: 72,
+    alignItems: 'flex-end',
+  },
+  authButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,

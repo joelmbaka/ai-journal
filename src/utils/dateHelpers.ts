@@ -9,6 +9,12 @@ export const formatDate = (date: Date | string): string => {
 
 export const formatDisplayDate = (date: string): string => {
   const d = new Date(date);
+  // Normalize to our canonical YYYY-MM-DD string to compare with helpers
+  const normalized = formatDate(d);
+  if (isToday(normalized)) return 'Today';
+  if (isTomorrow(normalized)) return 'Tomorrow';
+  if (isYesterday(normalized)) return 'Yesterday';
+
   return d.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -39,6 +45,10 @@ export const isToday = (date: string): boolean => {
 
 export const isYesterday = (date: string): boolean => {
   return date === getYesterday();
+};
+
+export const isTomorrow = (date: string): boolean => {
+  return date === getTomorrow();
 };
 
 export const getDateRange = (startDate: string, endDate: string): string[] => {

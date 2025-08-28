@@ -1,10 +1,8 @@
-export type BackgroundStyle = 'blank' | 'lined' | 'dotted' | 'grid' | 'minimal-lines';
 export type FontFamily = 'default' | 'serif' | 'mono' | 'handwriting' | 'modern';
-export type Theme = 'light' | 'dark' | 'warm' | 'cool' | 'auto';
+export type Theme = 'light' | 'dark' | 'auto';
 
 export interface PersonalizationSettings {
   // Visual customization
-  backgroundStyle: BackgroundStyle;
   fontFamily: FontFamily;
   fontSize: number; // 14-24
   lineHeight: number; // 1.2-2.0

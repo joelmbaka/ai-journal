@@ -1,4 +1,5 @@
 # AI-Powered Journal
+npx expo start --dev-client --lan --port 19000
 
 ## Overview
 

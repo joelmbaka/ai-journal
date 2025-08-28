@@ -1,220 +1,274 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
-  View,
-  StyleSheet,
-  SafeAreaView,
-  Keyboard,
+  Appearance,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
-  Alert,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  ScrollView,
+  Text,
+  PixelRatio,
 } from 'react-native';
-import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedGestureHandler,
-  useAnimatedStyle,
-  withSpring,
-  runOnJS,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Haptics } from 'expo-haptics';
+import { MaterialIcons } from '@expo/vector-icons';
+// Removed gesture handling - no horizontal swipe navigation
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { createEntry, updateEntry, setCurrentDate } from '../store/slices/journalSlice';
-import { BackgroundPatterns } from '../components/BackgroundPatterns';
-import { JournalTextInput } from '../components/JournalTextInput';
+// Removed BackgroundPatterns - using only clean blank background
 import { DateNavigationHeader } from '../components/DateNavigationHeader';
+import { JournalTextInput } from '../components/JournalTextInput';
+import { SpiralBinding } from '../components/SpiralBinding';
+import { JournalEntryComponent } from '../components/JournalEntry';
+import { colorPresets } from '../constants/colorPresets';
+import { useAppDispatch, useAppSelector } from '../hooks/redux';
+import { createEntry, setCurrentDate, updateEntry } from '../store/slices/journalSlice';
+import { setColors } from '../store/slices/settingsSlice';
 import { formatDate } from '../utils/dateHelpers';
+import { useJournalService } from '../database/journalService';
+import { JournalEntry } from '../database/schema';
 
 export const JournalScreen: React.FC = () => {
   const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
+  const journalService = useJournalService();
   
   const { entries, currentDate } = useAppSelector((state) => state.journal);
   const { personalization } = useAppSelector((state) => state.settings);
   
+  // State to trigger re-render when system theme changes
+  const [systemColorScheme, setSystemColorScheme] = useState(Appearance.getColorScheme());
+  
+  // New state for seamless journal entries
+  const [currentDateEntries, setCurrentDateEntries] = useState<JournalEntry[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+  
   const currentEntry = entries[currentDate];
-  const [localText, setLocalText] = useState(currentEntry?.content || '');
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Animation values for swipe navigation
-  const translateX = useSharedValue(0);
-  const opacity = useSharedValue(1);
-
+  // Load entries for current date on mount and when date changes
   useEffect(() => {
-    setLocalText(currentEntry?.content || '');
-  }, [currentDate, currentEntry]);
+    loadEntriesForCurrentDate();
+  }, [currentDate]);
 
-  // Auto-save functionality
-  const saveEntry = useCallback((text: string) => {
-    if (text.trim() === '') {
-      return;
-    }
-
-    if (currentEntry) {
-      dispatch(updateEntry({
-        date: currentDate,
-        updates: { content: text }
-      }));
-    } else {
-      dispatch(createEntry({
-        date: currentDate,
-        content: text
-      }));
-    }
-  }, [dispatch, currentDate, currentEntry]);
-
-  const handleTextChange = useCallback((text: string) => {
-    setLocalText(text);
-
-    if (personalization.autoSave) {
-      // Clear existing timeout
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
+  const loadEntriesForCurrentDate = async (preventRefreshKey = false) => {
+    try {
+      const entries = await journalService.getEntriesForDate(currentDate);
+      setCurrentDateEntries(entries);
+      if (!preventRefreshKey) {
+        setRefreshKey(prev => prev + 1);
       }
-
-      // Set new timeout for auto-save
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        saveEntry(text);
-      }, 2000); // Save after 2 seconds of inactivity
+    } catch (error) {
+      console.error('Error loading entries:', error);
     }
-  }, [personalization.autoSave, saveEntry]);
-
-  // Save text when component unmounts or date changes
-  useEffect(() => {
-    const saveCurrentText = () => {
-      if (localText.trim()) {
-        saveEntry(localText);
-      }
-    };
-
-    // Save when date changes (not on initial mount)
-    return () => {
-      saveCurrentText();
-      // Clear timeout on unmount
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [currentDate]); // Save when currentDate changes
-
-  // Clear timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Gesture handling for date navigation
-  const navigateToDate = (direction: 'prev' | 'next') => {
-    if (personalization.hapticFeedback) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-
-    const date = new Date(currentDate);
-    date.setDate(date.getDate() + (direction === 'next' ? 1 : -1));
-    dispatch(setCurrentDate(formatDate(date)));
   };
 
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: () => {
-      // Clear auto-save timeout and save current text before navigation
-      if (autoSaveTimeoutRef.current) {
-        runOnJS(clearTimeout)(autoSaveTimeoutRef.current);
-        autoSaveTimeoutRef.current = null;
-      }
-      if (localText.trim()) {
-        runOnJS(saveEntry)(localText);
-      }
-    },
-    onActive: (event) => {
-      translateX.value = event.translationX;
-      opacity.value = 1 - Math.abs(event.translationX) / 300;
-    },
-    onEnd: (event) => {
-      const { translationX, velocityX } = event;
-      const threshold = 100;
-      
-      if (Math.abs(translationX) > threshold || Math.abs(velocityX) > 500) {
-        if (translationX > 0) {
-          runOnJS(navigateToDate)('prev');
-        } else {
-          runOnJS(navigateToDate)('next');
-        }
-      }
-      
-      // Reset animation
-      translateX.value = withSpring(0);
-      opacity.value = withSpring(1);
-    },
-  });
+  // Refresh entries whenever the screen gains focus (e.g., returning from sign-out or other screens)
+  useFocusEffect(
+    useCallback(() => {
+      // Avoid re-keying the ScrollView on focus to keep scroll position stable
+      loadEntriesForCurrentDate(true);
+    }, [currentDate])
+  );
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateX: translateX.value }],
-      opacity: opacity.value,
-    };
-  });
+  const handleCreateEntry = async (title: string, content: string) => {
+    try {
+      const newEntryId = await journalService.createEntry(title, content, currentDate);
+      
+      // Optimistic update - add the new entry immediately without full reload
+      const newEntry: JournalEntry = {
+        id: newEntryId,
+        title,
+        content,
+        date: currentDate,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      setCurrentDateEntries(prevEntries => [newEntry, ...prevEntries]);
+    } catch (error) {
+      console.error('Error creating entry:', error);
+      // Fallback to full reload on error
+      await loadEntriesForCurrentDate(true);
+      throw error;
+    }
+  };
+
+  const handleUpdateEntry = async (id: number, title: string, content: string) => {
+    try {
+      await journalService.updateEntry(id, title, content);
+      
+      // Optimistic update - update the entry in place
+      setCurrentDateEntries(prevEntries => 
+        prevEntries.map(entry => 
+          entry.id === id 
+            ? { ...entry, title, content, updated_at: new Date().toISOString() }
+            : entry
+        )
+      );
+    } catch (error) {
+      console.error('Error updating entry:', error);
+      // Fallback to full reload on error
+      await loadEntriesForCurrentDate(true);
+      throw error;
+    }
+  };
+
+  const handleDeleteEntry = async (id: number) => {
+    try {
+      await journalService.deleteEntry(id);
+      
+      // Optimistic update - remove the entry immediately
+      setCurrentDateEntries(prevEntries => 
+        prevEntries.filter(entry => entry.id !== id)
+      );
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      // Fallback to full reload on error
+      await loadEntriesForCurrentDate(true);
+      throw error;
+    }
+  };
+
+  // Removed animation values - no swipe navigation
+
+
+  // Listen for system theme changes
+  useEffect(() => {
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setSystemColorScheme(colorScheme);
+    });
+
+    return () => subscription?.remove();
+  }, []);
+
+  // Removed gesture handling - only vertical scrolling allowed
 
   const handleDateChange = (date: string) => {
-    // Clear auto-save timeout and save current text before changing date
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-      autoSaveTimeoutRef.current = null;
-    }
-    if (localText.trim()) {
-      saveEntry(localText);
-    }
     dispatch(setCurrentDate(date));
   };
 
-  const getStatusBarStyle = () => {
-    if (personalization.theme === 'dark') return 'light-content';
-    if (personalization.theme === 'light') return 'dark-content';
-    return 'auto';
+  // Determine actual theme (handle auto/system theme)
+  const getActualTheme = () => {
+    if (personalization.theme === 'auto') {
+      return systemColorScheme === 'dark' ? 'dark' : 'light';
+    }
+    return personalization.theme;
   };
 
+  const actualTheme = getActualTheme();
+  
+  // No longer needed - removed line drawing feature
+
+  const getStatusBarStyle = () => {
+    if (actualTheme === 'dark') return 'light-content' as const;
+    return 'dark-content' as const;
+  };
+
+  // Use neutral screen background - only apply personalization colors to writing area
+  const screenBackgroundColor = actualTheme === 'dark' ? '#000000' : '#F5F5F5';
+
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <SafeAreaView style={[styles.container, { backgroundColor: personalization.backgroundColor }]}>
-        <StatusBar barStyle={getStatusBarStyle()} backgroundColor={personalization.backgroundColor} />
+      <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: screenBackgroundColor }]}>
+        <StatusBar barStyle={getStatusBarStyle()} />
         
         <DateNavigationHeader
           currentDate={currentDate}
           onDateChange={handleDateChange}
           personalization={personalization}
           hasEntry={!!currentEntry}
+          screenBackgroundColor={screenBackgroundColor}
+          actualTheme={actualTheme}
         />
 
-        <KeyboardAvoidingView
-          style={styles.content}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={insets.top}
-        >
+        <View style={[styles.quickColorsRow, { backgroundColor: screenBackgroundColor }]}>
+          {colorPresets.map((preset) => {
+            const isActive = personalization.backgroundColor === preset.bg;
+            return (
+              <TouchableOpacity
+                key={preset.name}
+                style={[
+                  styles.quickColorItem, 
+                  { 
+                    backgroundColor: preset.bg, 
+                    borderColor: isActive ? preset.accent : 'transparent',
+                    borderWidth: isActive ? 2 : 0,
+                  }
+                ]}
+                onPress={async () => {
+                  if (personalization.hapticFeedback) {
+                    try { await Haptics.selectionAsync(); } catch {}
+                  }
+                  dispatch(setColors({
+                    backgroundColor: preset.bg,
+                    textColor: preset.text,
+                    accentColor: preset.accent,
+                    lineColor: preset.line,
+                  }));
+                }}
+                accessibilityLabel={`Apply ${preset.name} colors`}
+              >
+                {isActive && (
+                  <View style={[
+                    styles.quickColorAccent, 
+                    { backgroundColor: preset.accent }
+                  ]} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <View style={styles.content}>
           <View style={styles.journalContainer}>
-            <BackgroundPatterns
-              style={personalization.backgroundStyle}
-              lineColor={personalization.lineColor}
-              backgroundColor={personalization.backgroundColor}
-            />
+            <SpiralBinding theme={actualTheme} />
             
-            <PanGestureHandler onGestureEvent={gestureHandler}>
-              <Animated.View style={[styles.textContainer, animatedStyle]}>
-                <JournalTextInput
-                  personalization={personalization}
-                  onTextChange={handleTextChange}
-                  initialText={localText}
-                  placeholder={`What happened on ${new Date(currentDate).toLocaleDateString()}?`}
-                />
-              </Animated.View>
-            </PanGestureHandler>
+            <View style={styles.textContainer}>
+                <View style={[styles.textAreaContainer, { backgroundColor: personalization.backgroundColor }]}>
+                  <KeyboardAvoidingView
+                    style={styles.keyboardAvoidingView}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={insets.top}
+                  >
+                    <ScrollView 
+                      style={styles.journalScrollView} 
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={styles.scrollContent}
+                      key={refreshKey}
+                      maintainVisibleContentPosition={{
+                        minIndexForVisible: 0,
+                        autoscrollToTopThreshold: 10,
+                      }}
+                    >
+                      {/* Render existing entries - oldest first */}
+                      {[...currentDateEntries].reverse().map((entry) => (
+                        <JournalEntryComponent
+                          key={entry.id}
+                          entry={entry}
+                          personalization={personalization}
+                          theme={actualTheme}
+                          onSave={handleCreateEntry}
+                          onUpdate={handleUpdateEntry}
+                          onDelete={handleDeleteEntry}
+                        />
+                      ))}
+                      
+                      {/* New entry input positioned immediately after last entry */}
+                      <JournalEntryComponent
+                        isNewEntry={true}
+                        personalization={personalization}
+                        theme={actualTheme}
+                        onSave={handleCreateEntry}
+                      />
+                    </ScrollView>
+                  </KeyboardAvoidingView>
+                </View>
+            </View>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </SafeAreaView>
-    </GestureHandlerRootView>
   );
 };
 
@@ -228,9 +282,53 @@ const styles = StyleSheet.create({
   journalContainer: {
     flex: 1,
     position: 'relative',
+    overflow: 'hidden',
   },
   textContainer: {
     flex: 1,
     zIndex: 1,
+    marginLeft: 40, // Space for spiral binding
+    marginTop: 16, // Gap between header and page
+    marginBottom: 0, // Let content extend to tabs
+    marginRight: 16, // Right margin for balance
+  },
+  textAreaContainer: {
+    flex: 1,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  quickColorsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16, // Reduced padding since no settings button
+    paddingVertical: 8,
+    gap: 10,
+  },
+  quickColorItem: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickColorAccent: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  journalScrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingBottom: 0,
+  },
+  newEntrySpacing: {
+    height: 8,
   },
 });

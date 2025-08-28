@@ -2,7 +2,6 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { PersonalizationSettings, SettingsState } from '../../types/settings';
 
 const defaultPersonalization: PersonalizationSettings = {
-  backgroundStyle: 'lined',
   fontFamily: 'default',
   fontSize: 16,
   lineHeight: 1.5,
@@ -36,9 +35,6 @@ const settingsSlice = createSlice({
       state.personalization = { ...state.personalization, ...action.payload };
     },
     
-    setBackgroundStyle: (state, action: PayloadAction<PersonalizationSettings['backgroundStyle']>) => {
-      state.personalization.backgroundStyle = action.payload;
-    },
     
     setFontFamily: (state, action: PayloadAction<PersonalizationSettings['fontFamily']>) => {
       state.personalization.fontFamily = action.payload;
@@ -81,7 +77,6 @@ const settingsSlice = createSlice({
 
 export const {
   updatePersonalization,
-  setBackgroundStyle,
   setFontFamily,
   setFontSize,
   setTheme,

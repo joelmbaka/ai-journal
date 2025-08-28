@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import {
-  TextInput,
-  StyleSheet,
-  Keyboard,
+  PixelRatio,
   Platform,
+  StyleSheet,
+  TextInput,
   TextInputProps,
 } from 'react-native';
 import { PersonalizationSettings } from '../types/settings';
@@ -12,25 +12,17 @@ interface JournalTextInputProps extends Omit<TextInputProps, 'style'> {
   personalization: PersonalizationSettings;
   onTextChange: (text: string) => void;
   initialText?: string;
+  value?: string;
 }
 
 export const JournalTextInput: React.FC<JournalTextInputProps> = ({
   personalization,
   onTextChange,
   initialText = '',
+  value,
   ...textInputProps
 }) => {
-  const [text, setText] = useState(initialText);
   const textInputRef = useRef<TextInput>(null);
-
-  useEffect(() => {
-    setText(initialText);
-  }, [initialText]);
-
-  const handleTextChange = (newText: string) => {
-    setText(newText);
-    onTextChange(newText);
-  };
 
   const getFontFamily = () => {
     switch (personalization.fontFamily) {
@@ -62,26 +54,76 @@ export const JournalTextInput: React.FC<JournalTextInputProps> = ({
     }
   };
 
+  // Line-index-based positioning system - robust across all devices
+  const getTextAlignment = () => {
+    const fontSize = personalization.fontSize;
+    const lineStep = PixelRatio.roundToNearestPixel(fontSize * personalization.lineHeight);
+    
+    // Configuration: which line should the bullet and text start on (0-indexed)
+    const startLineIndex = 0; // Start on first line (line 0)
+    
+    // Calculate Y position based on line index
+    const targetLineTop = startLineIndex * lineStep;
+    
+    // Approximate baseline position within a line box
+    const getBaselineRatio = () => {
+      const ratioByFamily: Record<string, number> = {
+        default: Platform.OS === 'ios' ? 0.82 : 0.80,
+        serif: Platform.OS === 'ios' ? 0.86 : 0.84,
+        mono: Platform.OS === 'ios' ? 0.78 : 0.76,
+        handwriting: Platform.OS === 'ios' ? 0.80 : 0.78,
+        modern: Platform.OS === 'ios' ? 0.82 : 0.80,
+      };
+      return ratioByFamily[personalization.fontFamily || 'default'] ?? ratioByFamily.default;
+    };
+
+    const baselineWithinLine = PixelRatio.roundToNearestPixel(fontSize * getBaselineRatio());
+    const textBaselineFromTop = targetLineTop + baselineWithinLine;
+    
+    // Platform-specific fine-tuning + user-requested 10px upward offset
+    const platformNudge = Platform.OS === 'ios' ? 0 : PixelRatio.roundToNearestPixel(1);
+    const userOffset = -10; // Move 10px higher as requested
+    
+    const computed = {
+      lineHeight: lineStep,
+      paddingTop: 0,
+      paddingLeft: 5,
+      paddingRight: personalization.textPadding,
+      paddingBottom: personalization.textPadding,
+      marginTop: PixelRatio.roundToNearestPixel(textBaselineFromTop + platformNudge + userOffset),
+      // Export line info for bullet positioning
+      _lineStep: lineStep,
+      _startLineIndex: startLineIndex,
+      _bulletDiameter: Math.max(6, Math.round(fontSize * 0.5)),
+    };
+
+    return computed;
+  };
+
+  const textAlignment = getTextAlignment();
   const textStyle = {
     fontSize: personalization.fontSize,
-    lineHeight: personalization.fontSize * personalization.lineHeight,
+    lineHeight: textAlignment.lineHeight,
     color: personalization.textColor,
     fontFamily: getFontFamily(),
-    padding: personalization.textPadding,
+    paddingTop: textAlignment.paddingTop,
+    paddingLeft: textAlignment.paddingLeft,
+    paddingRight: textAlignment.paddingRight,
+    paddingBottom: textAlignment.paddingBottom,
+    marginTop: textAlignment.marginTop,
   };
 
   return (
     <TextInput
       ref={textInputRef}
       style={[styles.textInput, textStyle]}
-      value={text}
-      onChangeText={handleTextChange}
-      placeholder="What's on your mind today?"
+      value={value !== undefined ? value : initialText}
+      onChangeText={onTextChange}
+      placeholder="What's on your mind?"
       placeholderTextColor={`${personalization.textColor}60`}
       multiline
       textAlignVertical="top"
       scrollEnabled
-      showsVerticalScrollIndicator={false}
       keyboardType="default"
       autoCorrect
       spellCheck

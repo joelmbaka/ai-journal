@@ -1,23 +1,25 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
-    Dimensions,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Platform,
 } from 'react-native';
-import { Calendar } from 'react-native-calendars';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { PersonalizationSettings } from '../types/settings';
 import { formatDisplayDate, isToday } from '../utils/dateHelpers';
-import { SettingsOverlay } from './SettingsOverlay';
 
 interface DateNavigationHeaderProps {
   currentDate: string;
   onDateChange: (date: string) => void;
   personalization: PersonalizationSettings;
   hasEntry: boolean;
+  screenBackgroundColor?: string;
+  actualTheme?: string;
 }
 
 const { width } = Dimensions.get('window');
@@ -27,9 +29,16 @@ export const DateNavigationHeader: React.FC<DateNavigationHeaderProps> = ({
   onDateChange,
   personalization,
   hasEntry,
+  screenBackgroundColor,
+  actualTheme,
 }) => {
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  
+  // Use neutral colors for navbar elements - use actualTheme if provided, fallback to personalization.theme
+  const effectiveTheme = actualTheme || personalization.theme;
+  const navTextColor = effectiveTheme === 'dark' ? '#FFFFFF' : '#1A1A1A';
+  const navAccentColor = effectiveTheme === 'dark' ? '#0A84FF' : '#007AFF';
+
 
   const navigateDate = (direction: 'prev' | 'next') => {
     const date = new Date(currentDate);
@@ -37,28 +46,17 @@ export const DateNavigationHeader: React.FC<DateNavigationHeaderProps> = ({
     onDateChange(date.toISOString().split('T')[0]);
   };
 
-  const handleCalendarSelect = (day: any) => {
-    onDateChange(day.dateString);
-    setShowCalendar(false);
-  };
-
-  const calendarTheme = {
-    backgroundColor: personalization.backgroundColor,
-    calendarBackground: personalization.backgroundColor,
-    textSectionTitleColor: personalization.textColor,
-    selectedDayBackgroundColor: personalization.accentColor,
-    selectedDayTextColor: personalization.backgroundColor,
-    todayTextColor: personalization.accentColor,
-    dayTextColor: personalization.textColor,
-    textDisabledColor: `${personalization.textColor}40`,
-    arrowColor: personalization.accentColor,
-    monthTextColor: personalization.textColor,
-    indicatorColor: personalization.accentColor,
+  const handleDatePickerChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const dateString = selectedDate.toISOString().split('T')[0];
+      onDateChange(dateString);
+    }
   };
 
   return (
     <>
-      <View style={[styles.header, { backgroundColor: personalization.backgroundColor }]}>
+      <View style={styles.header}>
         <TouchableOpacity
           style={styles.navButton}
           onPress={() => navigateDate('prev')}
@@ -66,22 +64,22 @@ export const DateNavigationHeader: React.FC<DateNavigationHeaderProps> = ({
           <MaterialIcons
             name="chevron-left"
             size={24}
-            color={personalization.accentColor}
+            color={navAccentColor}
           />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.dateContainer}
-          onPress={() => setShowCalendar(true)}
+          onPress={() => setShowDatePicker(true)}
         >
-          <Text style={[styles.dateText, { color: personalization.textColor }]}>
+          <Text style={[styles.dateText, { color: navTextColor }]}> 
             {formatDisplayDate(currentDate)}
           </Text>
           {isToday(currentDate) && (
-            <View style={[styles.todayIndicator, { backgroundColor: personalization.accentColor }]} />
+            <View style={[styles.todayIndicator, { backgroundColor: navAccentColor }]} />
           )}
           {hasEntry && (
-            <View style={[styles.entryIndicator, { backgroundColor: personalization.accentColor }]} />
+            <View style={[styles.entryIndicator, { backgroundColor: navAccentColor }]} />
           )}
         </TouchableOpacity>
 
@@ -92,53 +90,22 @@ export const DateNavigationHeader: React.FC<DateNavigationHeaderProps> = ({
           <MaterialIcons
             name="chevron-right"
             size={24}
-            color={personalization.accentColor}
+            color={navAccentColor}
           />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={() => setShowSettings(true)}
-        >
-          <MaterialIcons
-            name="settings"
-            size={20}
-            color={personalization.accentColor}
-          />
-        </TouchableOpacity>
       </View>
 
-      <Modal
-        visible={showCalendar}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowCalendar(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowCalendar(false)}
-        >
-          <View style={[styles.calendarContainer, { backgroundColor: personalization.backgroundColor }]}>
-            <Calendar
-              current={currentDate}
-              onDayPress={handleCalendarSelect}
-              theme={calendarTheme}
-              style={styles.calendar}
-              hideExtraDays={true}
-              firstDay={1}
-              showWeekNumbers={false}
-              disableMonthChange={false}
-              enableSwipeMonths={true}
-            />
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      {showDatePicker && (
+        <DateTimePicker
+          value={new Date(currentDate)}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDatePickerChange}
+          themeVariant={effectiveTheme === 'dark' ? 'dark' : 'light'}
+        />
+      )}
 
-      <SettingsOverlay
-        visible={showSettings}
-        onClose={() => setShowSettings(false)}
-      />
     </>
   );
 };
@@ -150,8 +117,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5E7',
   },
   navButton: {
     padding: 8,
@@ -181,29 +146,5 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  calendarContainer: {
-    width: width * 0.9,
-    borderRadius: 12,
-    padding: 16,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-  },
-  calendar: {
-    borderRadius: 8,
-  },
-  settingsButton: {
-    padding: 8,
-    borderRadius: 20,
-    marginLeft: 8,
   },
 });
