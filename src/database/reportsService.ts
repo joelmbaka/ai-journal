@@ -37,7 +37,6 @@ export const useReportsService = () => {
         updatedAt TEXT NOT NULL
       );
     `);
-    console.log('✅ [DB] Reports table initialized');
   };
 
   const getAllReports = async (): Promise<Report[]> => {
@@ -47,7 +46,6 @@ export const useReportsService = () => {
         ORDER BY createdAt DESC
       `);
       
-      console.log(`📊 [DB] Retrieved ${result.length} reports`);
       return result;
     } catch (error) {
       console.error('❌ [DB] Error fetching reports:', error);
@@ -72,8 +70,6 @@ export const useReportsService = () => {
         now
       ]);
 
-      console.log(`✅ [DB] Report created successfully: ${result.lastInsertRowId}`);
-      
       // Return the created report
       const createdReport = await db.getFirstAsync<Report>(`
         SELECT * FROM reports WHERE id = ?
@@ -97,7 +93,6 @@ export const useReportsService = () => {
             createdAt: createdReport.createdAt,
             updatedAt: createdReport.updatedAt,
           });
-          console.log('☁️ [Sync] Pushed report to cloud');
         }
       } catch (e) {
         console.warn('☁️ [Sync] pushReport failed', e);
@@ -131,7 +126,6 @@ export const useReportsService = () => {
       
       const result = await db.runAsync(query, params);
       
-      console.log(`✅ [DB] Report ${id} status updated to ${status}`);
       return result.changes > 0;
     } catch (error) {
       console.error('❌ [DB] Error updating report status:', error);
@@ -145,7 +139,6 @@ export const useReportsService = () => {
         DELETE FROM reports WHERE id = ?
       `, [id]);
       
-      console.log(`🗑️ [DB] Report deleted: ${id}`);
       const ok = result.changes > 0;
 
       if (ok) {
@@ -154,7 +147,6 @@ export const useReportsService = () => {
           const { data } = await supabase.auth.getSession();
           if (data?.session?.user) {
             await deleteRemoteReport(id);
-            console.log('☁️ [Sync] Deleted remote report', id);
           }
         } catch (e) {
           console.warn('☁️ [Sync] deleteRemoteReport failed', e);
@@ -185,7 +177,6 @@ export const useReportsService = () => {
   const clearAllReports = async (): Promise<void> => {
     try {
       await db.execAsync('DELETE FROM reports;');
-      console.log('🧹 [DB] Cleared all reports');
     } catch (error) {
       console.error('❌ [DB] Error clearing all reports:', error);
       throw error;

@@ -1,3 +1,4 @@
+import 'react-native-reanimated';
 import { Tabs } from "expo-router";
 import { ActivityIndicator, Text, View, Appearance } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -9,6 +10,7 @@ import { Suspense, useState, useEffect } from "react";
 import { MaterialIcons } from '@expo/vector-icons';
 import type { RootState } from "../src/store";
 import { AuthProvider } from "../src/context/AuthContext";
+import { TabTransitionProvider } from "../src/context/TabTransitionContext";
 
 // Loading component while Redux state rehydrates
 const LoadingScreen = () => (
@@ -44,8 +46,9 @@ const ThemedTabs = () => {
   const tabBarInactiveTint = actualTheme === 'dark' ? '#8E8E93' : '#8E8E93';
 
   return (
-    <Tabs
-      screenOptions={{
+    <TabTransitionProvider order={['index','reports','settings']}>
+      <Tabs
+        screenOptions={{
         headerShown: false,
         tabBarStyle: {
           backgroundColor: tabBarBackgroundColor,
@@ -58,8 +61,8 @@ const ThemedTabs = () => {
           fontSize: 12,
           fontWeight: '500',
         },
-      }}
-    >
+        }}
+      >
       <Tabs.Screen
         name="index"
         options={{
@@ -87,7 +90,8 @@ const ThemedTabs = () => {
           ),
         }}
       />
-    </Tabs>
+      </Tabs>
+    </TabTransitionProvider>
   );
 };
 

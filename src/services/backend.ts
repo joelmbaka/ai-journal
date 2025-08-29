@@ -25,7 +25,6 @@ async function resolveBackendBaseUrl(): Promise<string> {
       clearTimeout(timeoutId);
       if (res.ok) {
         RESOLVED_BASE_URL = base.replace(/\/+$/, '');
-        if (__DEV__) console.log(`[Backend] Using base URL: ${RESOLVED_BASE_URL}`);
         return RESOLVED_BASE_URL;
       }
     } catch (_) {

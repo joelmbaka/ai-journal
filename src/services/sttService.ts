@@ -13,7 +13,6 @@ class STTService {
   private ASSEMBLYAI_BASE_URL = 'https://api.assemblyai.com/v2';
 
   async convertSpeechToText(audioUri: string): Promise<STTResponse> {
-    console.log('🎤 [STT] Starting speech-to-text conversion...');
     return await this.assemblyAITranscribe(audioUri);
   }
 
@@ -22,18 +21,13 @@ class STTService {
       throw new Error('AssemblyAI API key not configured');
     }
 
-    console.log('🔄 [STT] Using AssemblyAI transcription...');
-
     // Test network connectivity first
     try {
-      console.log('🌐 [STT] Testing network connectivity...');
       const testResponse = await fetch('https://httpbin.org/get', { 
         method: 'GET',
         
       });
-      if (testResponse.ok) {
-        console.log('✅ [STT] Basic network connectivity confirmed');
-      } else {
+      if (!testResponse.ok) {
         console.warn('⚠️ [STT] Network test returned non-200 status');
       }
     } catch (networkError) {
@@ -50,24 +44,18 @@ class STTService {
     // Step 3: Poll for completion
     const transcript = await this.pollAssemblyAIResult(transcriptId);
     
-    console.log('✅ [STT] AssemblyAI transcription completed:', transcript.substring(0, 50) + '...');
     return { text: transcript };
   }
 
   private async uploadToAssemblyAI(audioUri: string): Promise<string> {
-    console.log('📤 [STT] Uploading audio to AssemblyAI...');
-    
     try {
       // Read audio file as blob
-      console.log('📁 [STT] Reading audio file:', audioUri);
       const response = await fetch(audioUri);
       if (!response.ok) {
         throw new Error(`Failed to read audio file: ${response.status}`);
       }
       const audioBlob = await response.blob();
-      console.log('📊 [STT] Audio blob size:', audioBlob.size, 'bytes');
       
-      console.log('🌐 [STT] Uploading to AssemblyAI API...');
       const uploadResponse = await fetch(`${this.ASSEMBLYAI_BASE_URL}/upload`, {
         method: 'POST',
         headers: {
@@ -84,7 +72,6 @@ class STTService {
       }
 
       const uploadResult = await uploadResponse.json();
-      console.log('✅ [STT] Audio uploaded to AssemblyAI');
       return uploadResult.upload_url;
       
     } catch (error) {
@@ -95,8 +82,6 @@ class STTService {
   }
 
   private async submitAssemblyAIJob(audioUrl: string): Promise<string> {
-    console.log('📝 [STT] Submitting transcription job...');
-    
     const jobData = {
       audio_url: audioUrl,
       speech_model: 'universal',
@@ -116,12 +101,10 @@ class STTService {
     }
 
     const result = await response.json();
-    console.log('✅ [STT] Transcription job submitted, ID:', result.id);
     return result.id;
   }
 
   private async pollAssemblyAIResult(transcriptId: string): Promise<string> {
-    console.log('⏳ [STT] Polling for transcription result...');
     const pollingEndpoint = `${this.ASSEMBLYAI_BASE_URL}/transcript/${transcriptId}`;
     
     while (true) {
@@ -142,7 +125,6 @@ class STTService {
       } else if (result.status === 'error') {
         throw new Error(`AssemblyAI transcription failed: ${result.error}`);
       } else {
-        console.log(`⏳ [STT] Status: ${result.status}, waiting...`);
         await new Promise(resolve => setTimeout(resolve, 2000)); // Poll every 2 seconds
       }
     }
@@ -151,15 +133,11 @@ class STTService {
 
   async requestPermissions(): Promise<boolean> {
     try {
-      console.log('🎤 [STT] Requesting audio permissions...');
-      
       const { status } = await Audio.requestPermissionsAsync();
       
       if (status === 'granted') {
-        console.log('✅ [STT] Audio permissions granted');
         return true;
       } else {
-        console.log('❌ [STT] Audio permissions denied');
         return false;
       }
     } catch (error) {
@@ -170,8 +148,6 @@ class STTService {
 
   async startRecording(): Promise<Audio.Recording | null> {
     try {
-      console.log('🎤 [STT] Starting audio recording...');
-
       // Request permissions first
       const hasPermission = await this.requestPermissions();
       if (!hasPermission) {
@@ -189,7 +165,6 @@ class STTService {
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
 
-      console.log('✅ [STT] Recording started');
       return recording;
     } catch (error) {
       console.error('❌ [STT] Failed to start recording:', error);
@@ -199,8 +174,6 @@ class STTService {
 
   async stopRecording(recording: Audio.Recording): Promise<string> {
     try {
-      console.log('🎤 [STT] Stopping recording...');
-      
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
 
@@ -208,7 +181,6 @@ class STTService {
         throw new Error('Failed to get recording URI');
       }
 
-      console.log('✅ [STT] Recording stopped, URI:', uri);
       return uri;
     } catch (error) {
       console.error('❌ [STT] Failed to stop recording:', error);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -9,6 +9,9 @@ import { useReportsService, Report } from '../src/database/reportsService';
 import { sttService } from '../src/services/sttService';
 import { generateAIReport, renderAIReportToText } from '../src/services/backend';
 import { useAuth } from '../src/context/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
+import { SlideInView } from '../src/components/SlideInView';
+import { useTabTransition } from '../src/context/TabTransitionContext';
 
 
 const ReportCard: React.FC<{ report: Report; onPress: () => void; onDelete: () => void }> = ({ report, onPress, onDelete }) => {
@@ -170,7 +173,6 @@ const AIReportModal: React.FC<{ visible: boolean; onClose: () => void; onReportG
     setIsGenerating(true);
     
     try {
-      console.log('🤖 [AI] Generating report with prompt:', currentPrompt);
 
       // Start step progression (no DB write until success)
       setSteps(prev => prev.map((s, idx) => ({ ...s, status: idx === 0 ? 'active' : 'pending' })));
@@ -212,12 +214,10 @@ const AIReportModal: React.FC<{ visible: boolean; onClose: () => void; onReportG
         }
         // Ensure all steps are marked done on completion
         setSteps(prev => prev.map((s) => ({ ...s, status: 'done' })));
-        console.log('✅ [AI] Report generated successfully');
       } else {
         const msg = resp.error_message ?? 'No report returned';
         const failMsg = `AI report failed: ${msg}`;
         setErrorText(failMsg);
-        console.warn('❌ [AI] Report generation failed:', msg);
       }
 
       setPrompt('');
@@ -417,6 +417,7 @@ export default function ReportsTab() {
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const reportsService = useReportsService();
+  const { setCurrentByRouteName } = useTabTransition();
 
   const loadReports = async () => {
     setIsLoading(true);
@@ -460,8 +461,15 @@ export default function ReportsTab() {
     );
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      setCurrentByRouteName('reports');
+    }, [setCurrentByRouteName])
+  );
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SlideInView>
+      <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <MaterialIcons name="assessment" size={28} color="#007AFF" />
         <Text style={styles.headerTitle}>Reports</Text>
@@ -522,7 +530,8 @@ export default function ReportsTab() {
         report={selectedReport}
         onClose={() => { setDetailVisible(false); setSelectedReport(null); }}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </SlideInView>
   );
 }
 

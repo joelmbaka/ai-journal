@@ -98,16 +98,13 @@ export const JournalEntryComponent: React.FC<JournalEntryProps> = ({
   const handleAutoSave = async (text: string) => {
     if (!text.trim() || isSaving) return;
 
-    console.log(`🔄 [AutoSave] Triggering auto-save for ${entry ? 'existing' : 'new'} entry`);
     setIsSaving(true);
     try {
       const title = generateTitle(text);
       
       if (entry && onUpdate) {
-        console.log(`📝 [AutoSave] Updating existing entry ID: ${entry.id}`);
         await onUpdate(entry.id, title, text);
       } else if (isNewEntry) {
-        console.log(`✏️ [AutoSave] Creating new entry`);
         await onSave(title, text);
         // Clear the new entry input after successful save
         setContent('');
@@ -119,7 +116,6 @@ export const JournalEntryComponent: React.FC<JournalEntryProps> = ({
       if (!isNewEntry) {
         setHasChanges(false);
       }
-      console.log(`✅ [AutoSave] Auto-save completed successfully`);
     } catch (error) {
       console.error('❌ [AutoSave] Auto-save failed:', error);
     } finally {

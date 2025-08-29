@@ -183,43 +183,6 @@ export const JournalScreen: React.FC = () => {
           actualTheme={actualTheme}
         />
 
-        <View style={[styles.quickColorsRow, { backgroundColor: screenBackgroundColor }]}>
-          {colorPresets.map((preset) => {
-            const isActive = personalization.backgroundColor === preset.bg;
-            return (
-              <TouchableOpacity
-                key={preset.name}
-                style={[
-                  styles.quickColorItem, 
-                  { 
-                    backgroundColor: preset.bg, 
-                    borderColor: isActive ? preset.accent : 'transparent',
-                    borderWidth: isActive ? 2 : 0,
-                  }
-                ]}
-                onPress={async () => {
-                  if (personalization.hapticFeedback) {
-                    try { await Haptics.selectionAsync(); } catch {}
-                  }
-                  dispatch(setColors({
-                    backgroundColor: preset.bg,
-                    textColor: preset.text,
-                    accentColor: preset.accent,
-                    lineColor: preset.line,
-                  }));
-                }}
-                accessibilityLabel={`Apply ${preset.name} colors`}
-              >
-                {isActive && (
-                  <View style={[
-                    styles.quickColorAccent, 
-                    { backgroundColor: preset.accent }
-                  ]} />
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
 
         <View style={styles.content}>
           <View style={styles.journalContainer}>
@@ -242,6 +205,49 @@ export const JournalScreen: React.FC = () => {
                         autoscrollToTopThreshold: 10,
                       }}
                     >
+                      <View style={styles.quickColorsRow}>
+                        {colorPresets.map((preset) => {
+                          const isActive = personalization.backgroundColor === preset.bg;
+                          return (
+                            <TouchableOpacity
+                              key={preset.name}
+                              style={[
+                                styles.quickColorItem,
+                                {
+                                  backgroundColor: preset.bg,
+                                  borderColor: isActive ? preset.accent : 'transparent',
+                                  borderWidth: isActive ? 2 : 0,
+                                },
+                              ]}
+                              onPress={async () => {
+                                if (personalization.hapticFeedback) {
+                                  try {
+                                    await Haptics.selectionAsync();
+                                  } catch {}
+                                }
+                                dispatch(
+                                  setColors({
+                                    backgroundColor: preset.bg,
+                                    textColor: preset.text,
+                                    accentColor: preset.accent,
+                                    lineColor: preset.line,
+                                  })
+                                );
+                              }}
+                              accessibilityLabel={`Apply ${preset.name} colors`}
+                            >
+                              {isActive && (
+                                <View
+                                  style={[
+                                    styles.quickColorAccent,
+                                    { backgroundColor: preset.accent },
+                                  ]}
+                                />
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
                       {/* Render existing entries - oldest first */}
                       {[...currentDateEntries].reverse().map((entry) => (
                         <JournalEntryComponent

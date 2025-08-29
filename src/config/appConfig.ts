@@ -66,9 +66,5 @@ export function getBackendBaseUrl(): string {
   // Normalize by removing trailing slashes
   url = url.replace(/\/+$/, '');
 
-  if (__DEV__) {
-    // eslint-disable-next-line no-console
-    console.log('[Config] Backend base URL:', url);
-  }
   return url;
 }

@@ -64,22 +64,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     (async () => {
       try {
-        const { pushed: pushedEntries } = await pushAllEntries(db);
-        console.log(`☁️ Sync: pushed ${pushedEntries} local entries for user ${userId}`);
+        await pushAllEntries(db);
       } catch (e) {
         console.warn('☁️ Sync: pushAllEntries failed', e);
       }
 
       try {
-        const { pushed: pushedReports } = await pushAllReports(db);
-        console.log(`☁️ Sync: pushed ${pushedReports} local reports for user ${userId}`);
+        await pushAllReports(db);
       } catch (e) {
         console.warn('☁️ Sync: pushAllReports failed', e);
       }
 
       try {
-        const { inserted, updated } = await pullAllEntries(db);
-        console.log(`☁️ Sync: pulled ${inserted} new and updated ${updated} entries from cloud for user ${userId}`);
+        await pullAllEntries(db);
       } catch (e) {
         console.warn('☁️ Sync: pullAllEntries failed', e);
       }
@@ -134,14 +131,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Clear local SQLite data: journals and reports
       try {
         await db.execAsync('DELETE FROM journal_entries;');
-        console.log('🧹 Cleared local journal_entries table');
       } catch (e) {
         console.warn('Failed to clear journal_entries table', e);
       }
 
       try {
         await db.execAsync('DELETE FROM reports;');
-        console.log('🧹 Cleared local reports table');
       } catch (e) {
         // The reports table may not exist yet; ignore if so
         console.warn('Failed to clear reports table (may not exist yet)', e);
@@ -153,7 +148,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         dispatch(resetToDefaults());
         await AsyncStorage.multiRemove(['persist:journal', 'persist:settings']);
         await persistor.purge();
-        console.log('🧹 Cleared Redux journal state and persisted cache');
       } catch (e) {
         console.warn('Failed to clear persisted Redux journal state', e);
       }
