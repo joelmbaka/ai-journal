@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "journal",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -28,9 +27,7 @@
       "url": "https://u.expo.dev/d99955e9-5d19-40e8-bed4-6d28d9a70570",
       "enabled": true
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "plugins": [
       "expo-router",
       [
@@ -42,7 +39,16 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true
@@ -56,4 +62,3 @@
     }
   }
 }
-

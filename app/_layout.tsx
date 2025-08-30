@@ -1,7 +1,9 @@
+import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { Tabs } from "expo-router";
 import { ActivityIndicator, Text, View, Appearance } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider, useSelector } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "../src/store";
@@ -97,18 +99,20 @@ const ThemedTabs = () => {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <Provider store={store}>
-        <PersistGate loading={<LoadingScreen />} persistor={persistor}>
-          <Suspense fallback={<LoadingScreen />}>
-            <DatabaseProvider>
-              <AuthProvider>
-                <ThemedTabs />
-              </AuthProvider>
-            </DatabaseProvider>
-          </Suspense>
-        </PersistGate>
-      </Provider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <Provider store={store}>
+          <PersistGate loading={<LoadingScreen />} persistor={persistor}>
+            <Suspense fallback={<LoadingScreen />}>
+              <DatabaseProvider>
+                <AuthProvider>
+                  <ThemedTabs />
+                </AuthProvider>
+              </DatabaseProvider>
+            </Suspense>
+          </PersistGate>
+        </Provider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

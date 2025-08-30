@@ -9,6 +9,7 @@ import {
   View,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { PersonalizationSettings } from '../types/settings';
 import { formatDisplayDate, isToday } from '../utils/dateHelpers';
@@ -33,6 +34,7 @@ export const DateNavigationHeader: React.FC<DateNavigationHeaderProps> = ({
   actualTheme,
 }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const insets = useSafeAreaInsets();
   
   // Use neutral colors for navbar elements - use actualTheme if provided, fallback to personalization.theme
   const effectiveTheme = actualTheme || personalization.theme;
@@ -56,7 +58,7 @@ export const DateNavigationHeader: React.FC<DateNavigationHeaderProps> = ({
 
   return (
     <>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity
           style={styles.navButton}
           onPress={() => navigateDate('prev')}
@@ -93,7 +95,6 @@ export const DateNavigationHeader: React.FC<DateNavigationHeaderProps> = ({
             color={navAccentColor}
           />
         </TouchableOpacity>
-
       </View>
 
       {showDatePicker && (

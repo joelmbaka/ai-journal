@@ -43,7 +43,7 @@ report_synthesizer = Agent(
     - Ensuring reports feel personal, relevant, and empowering
     
     You understand that people seek self-knowledge to grow and improve, so you craft reports that inspire action while acknowledging current realities.""",
-    llm=llama_70b,
+    llm=llama_scout,
     verbose=True,
     allow_delegation=False,
 )

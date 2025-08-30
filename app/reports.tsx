@@ -469,7 +469,7 @@ export default function ReportsTab() {
 
   return (
     <SlideInView>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       <View style={styles.header}>
         <MaterialIcons name="assessment" size={28} color="#007AFF" />
         <Text style={styles.headerTitle}>Reports</Text>

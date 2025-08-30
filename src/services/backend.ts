@@ -2,13 +2,13 @@ import { supabase } from '../lib/supabase';
 import { getBackendBaseUrl } from '../config/appConfig';
 
 // Resolve backend URL robustly at runtime. We probe likely candidates and cache the first reachable one.
-const BASE_URL_SEED = getBackendBaseUrl();
 let RESOLVED_BASE_URL: string | null = null;
 
 async function resolveBackendBaseUrl(): Promise<string> {
   if (RESOLVED_BASE_URL) return RESOLVED_BASE_URL;
 
-  // Build candidate list (ordered by likelihood)
+  // Build candidate list (ordered by likelihood) - get seed URL lazily
+  const BASE_URL_SEED = getBackendBaseUrl();
   const candidates = Array.from(new Set([
     BASE_URL_SEED,
     // Common emulator/localhost fallbacks

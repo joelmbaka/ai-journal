@@ -1,0 +1,59 @@
+# EAS Build ignore file
+# If this file exists, EAS uses it instead of .gitignore when creating the project archive.
+# Docs: https://expo.fyi/eas-build-archive
+
+# Node modules are installed on the builder
+node_modules/
+
+# Expo/Metro caches and outputs
+.expo/
+.expo-shared/
+dist/
+web-build/
+.metro-health-check*
+
+# Native credentials and sensitive files
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
+# OS / editor / repo service clutter
+.vscode/
+.idea/
+.github/
+.husky/
+.DS_Store
+**/Thumbs.db
+
+# Environment files (keep .env for EXPO_PUBLIC_* vars)
+*.env*.local
+backend/.env
+
+# Python backend (not needed for the RN client build)
+backend/
+
+# Python artifacts (in case anything leaks outside backend/)
+**/__pycache__/
+**/*.py[oc]
+**/*.egg-info/
+**/.venv/
+**/build/
+**/dist/
+**/wheels/
+
+# Logs / tests / coverage
+**/*.log
+coverage/
+**/__tests__/
+**/*.test.*
+**/*.spec.*
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Unused sample images (keep only the ones referenced in app.json)
+assets/images/react-logo*.png
+assets/images/partial-react-logo.png

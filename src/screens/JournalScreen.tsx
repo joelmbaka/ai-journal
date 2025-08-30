@@ -171,7 +171,7 @@ export const JournalScreen: React.FC = () => {
   const screenBackgroundColor = actualTheme === 'dark' ? '#000000' : '#F5F5F5';
 
   return (
-      <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: screenBackgroundColor }]}>
+      <View style={[styles.container, { backgroundColor: screenBackgroundColor }]}>
         <StatusBar barStyle={getStatusBarStyle()} />
         
         <DateNavigationHeader
@@ -274,7 +274,7 @@ export const JournalScreen: React.FC = () => {
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
   );
 };
 
