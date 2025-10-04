@@ -37,26 +37,17 @@ async function resolveBackendBaseUrl(): Promise<string> {
   return RESOLVED_BASE_URL;
 }
 
-// Types aligned with backend/models.py (simplified where possible)
-export interface AIKeyInsight { title: string; description: string; confidence: number }
-export interface AIRecommendation { action: string; priority: 'high' | 'medium' | 'low'; rationale: string }
-export interface AIMoodPattern { dominant_mood: string; trend: 'improving' | 'declining' | 'stable' | 'mixed'; frequency: number }
-
+// Types aligned with simplified backend/models.py
 export interface AIReport {
   title: string;
   summary: string;
-  analysis_type: string[];
-  key_insights: AIKeyInsight[];
-  recommendations: AIRecommendation[];
-  mood_patterns?: AIMoodPattern[];
-  themes_identified?: string[];
+  key_insights: string[];
+  recommendations: string[];
+  mood_analysis?: string;
   keywords?: string[];
   entries_analyzed: number;
-  date_range_start?: string | null;
-  date_range_end?: string | null;
   confidence_score: number;
   prompt_used: string;
-  user_focus_areas?: string[];
 }
 
 export interface AIReportResponse {
@@ -99,7 +90,7 @@ export async function generateAIReport(params: {
   try {
     const base = await resolveBackendBaseUrl();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 240_000); // allow up to 4 minutes
+    const timeout = setTimeout(() => controller.abort(), 600_000); // allow up to 10 minutes
     const res = await fetch(`${base}/generate-report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -122,40 +113,71 @@ export async function generateAIReport(params: {
 // Helper to render AIReport to a user-friendly text block
 export function renderAIReportToText(report: AIReport): string {
   const parts: string[] = [];
-  parts.push(`# ${report.title}`);
+  // Normalize fields defensively to avoid NaN/undefined in UI
+  const title = (report as any)?.title ? String((report as any).title).trim() : 'AI Report';
+  const summary = (report as any)?.summary ? String((report as any).summary).trim() : '';
+  const normalizeList = (v: any): string[] => {
+    if (Array.isArray(v)) return v.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).filter(Boolean);
+    if (typeof v === 'string' && v.trim()) return [v.trim()];
+    return [];
+  };
+  const keyInsights = normalizeList((report as any).key_insights);
+  const recommendations = normalizeList((report as any).recommendations);
+  const keywords = normalizeList((report as any).keywords);
+  const entriesRaw = (report as any)?.entries_analyzed;
+  let entries = 0;
+  if (typeof entriesRaw === 'number' && Number.isFinite(entriesRaw)) {
+    entries = entriesRaw;
+  } else if (typeof entriesRaw === 'string') {
+    const n = parseInt(entriesRaw, 10);
+    if (Number.isFinite(n)) entries = n;
+  }
+  const confidenceRaw = (report as any)?.confidence_score;
+  let confidence = 0.5;
+  if (typeof confidenceRaw === 'number' && Number.isFinite(confidenceRaw)) {
+    confidence = confidenceRaw;
+  } else if (typeof confidenceRaw === 'string') {
+    const n = parseFloat(confidenceRaw);
+    if (Number.isFinite(n)) confidence = n;
+  }
+  const promptUsed = (report as any)?.prompt_used ? String((report as any).prompt_used).trim() : '';
+
+  parts.push(`# ${title}`);
   parts.push('');
-  parts.push(report.summary);
+  parts.push(summary);
   parts.push('');
 
-  if (report.key_insights?.length) {
+  if (keyInsights.length) {
     parts.push('Key Insights:');
-    report.key_insights.forEach((k, idx) => {
-      parts.push(`- (${(k.confidence * 100).toFixed(0)}%) ${k.title}: ${k.description}`);
+    keyInsights.forEach((insight) => {
+      parts.push(`- ${insight}`);
     });
     parts.push('');
   }
 
-  if (report.recommendations?.length) {
+  if (recommendations.length) {
     parts.push('Recommendations:');
-    report.recommendations.forEach((r) => {
-      parts.push(`- [${r.priority}] ${r.action} — ${r.rationale}`);
+    recommendations.forEach((rec) => {
+      parts.push(`- ${rec}`);
     });
     parts.push('');
   }
 
-  if (report.themes_identified?.length) {
-    parts.push(`Themes: ${report.themes_identified.join(', ')}`);
-  }
-  if (report.keywords?.length) {
-    parts.push(`Keywords: ${report.keywords.join(', ')}`);
+  if ((report as any)?.mood_analysis) {
+    parts.push(`Mood Analysis: ${String((report as any).mood_analysis)}`);
+    parts.push('');
   }
 
-  parts.push('');
-  parts.push(`Entries analyzed: ${report.entries_analyzed}`);
-  if (report.date_range_start || report.date_range_end) {
-    parts.push(`Date range: ${report.date_range_start ?? ''} → ${report.date_range_end ?? ''}`);
+  if (keywords.length) {
+    parts.push(`Keywords: ${keywords.join(', ')}`);
+    parts.push('');
   }
-  parts.push(`Overall confidence: ${(report.confidence_score * 100).toFixed(0)}%`);
+
+  parts.push(`Entries analyzed: ${entries}`);
+  parts.push(`Overall confidence: ${(confidence * 100).toFixed(0)}%`);
+  if (promptUsed) {
+    parts.push(`Prompt used: ${promptUsed}`);
+  }
 
   return parts.join('\n');
 }

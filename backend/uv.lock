@@ -137,8 +137,10 @@ dependencies = [
     { name = "crewai" },
     { name = "elevenlabs" },
     { name = "fastapi" },
+    { name = "openai" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
+    { name = "requests" },
     { name = "uvicorn" },
 ]
 
@@ -147,8 +149,10 @@ requires-dist = [
     { name = "crewai", specifier = ">=0.165.1" },
     { name = "elevenlabs", specifier = ">=2.12.1" },
     { name = "fastapi", specifier = ">=0.116.1" },
+    { name = "openai", specifier = ">=1.0.0" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "python-multipart", specifier = ">=0.0.20" },
+    { name = "requests", specifier = ">=2.32.5" },
     { name = "uvicorn", specifier = ">=0.35.0" },
 ]
 

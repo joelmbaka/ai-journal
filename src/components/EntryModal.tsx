@@ -5,11 +5,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
 } from 'react-native';
 import { JournalEntry } from '../database/schema';
 
@@ -95,42 +95,42 @@ export const EntryModal: React.FC<EntryModalProps> = ({
       onRequestClose={handleClose}
     >
       <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor }]}
+        className="flex-1"
+        style={{ backgroundColor }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: borderColor }]}>
-          <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
-            <Text style={[styles.headerButtonText, { color: textColor }]}>
+        <View
+          className="flex-row items-center justify-between px-4 py-3 border-b"
+          style={{ borderBottomColor: borderColor, borderBottomWidth: StyleSheet.hairlineWidth, paddingTop: 50 }}
+        >
+          <TouchableOpacity onPress={handleClose} className="py-2 px-1 min-w-[60px]">
+            <Text className="text-base font-medium" style={{ color: textColor }}>
               Cancel
             </Text>
           </TouchableOpacity>
-          
-          <Text style={[styles.headerTitle, { color: textColor }]}>
+
+          <Text className="text-lg font-semibold" style={{ color: textColor }}>
             {entry ? 'Edit Entry' : 'New Entry'}
           </Text>
-          
-          <TouchableOpacity 
-            onPress={handleSave} 
-            style={[styles.headerButton, styles.saveButton]}
+
+          <TouchableOpacity
+            onPress={handleSave}
+            className="py-2 px-3 min-w-[60px] rounded-lg"
+            style={{ backgroundColor: '#007AFF' }}
             disabled={saving}
           >
-            <Text style={[styles.headerButtonText, styles.saveButtonText]}>
+            <Text className="text-base font-medium text-white text-center">
               {saving ? 'Saving...' : 'Save'}
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Content */}
-        <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView className="flex-1 px-4" keyboardShouldPersistTaps="handled">
           <TextInput
-            style={[
-              styles.titleInput,
-              {
-                color: textColor,
-                borderBottomColor: borderColor,
-              },
-            ]}
+            className="text-2xl font-semibold py-4 border-b mb-4"
+            style={{ color: textColor, borderBottomColor: borderColor, borderBottomWidth: StyleSheet.hairlineWidth }}
             placeholder="Entry title..."
             placeholderTextColor={placeholderColor}
             value={title}
@@ -141,14 +141,12 @@ export const EntryModal: React.FC<EntryModalProps> = ({
           />
 
           <TextInput
-            style={[
-              styles.contentInput,
-              {
-                color: textColor,
-                backgroundColor: theme === 'dark' ? '#2A2A2A' : '#F8F8F8',
-                borderColor: borderColor,
-              },
-            ]}
+            className="text-base leading-6 p-4 rounded-xl border min-h-[400px]"
+            style={{
+              color: textColor,
+              backgroundColor: theme === 'dark' ? '#2A2A2A' : '#F8F8F8',
+              borderColor: borderColor,
+            }}
             placeholder="What's on your mind?"
             placeholderTextColor={placeholderColor}
             value={content}
@@ -163,59 +161,4 @@ export const EntryModal: React.FC<EntryModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    paddingTop: 50, // Account for status bar
-  },
-  headerButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    minWidth: 60,
-  },
-  headerButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  saveButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  titleInput: {
-    fontSize: 24,
-    fontWeight: '600',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    marginBottom: 16,
-  },
-  contentInput: {
-    fontSize: 16,
-    lineHeight: 24,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    minHeight: 400,
-    textAlignVertical: 'top',
-  },
-});
+// Stylesheet removed in favor of NativeWind className utilities and inline dynamic styles

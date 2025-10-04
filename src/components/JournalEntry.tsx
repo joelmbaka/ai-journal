@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, PixelRatio, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, PixelRatio, Platform, ActivityIndicator, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { JournalTextInput } from './JournalTextInput';
@@ -226,59 +226,58 @@ export const JournalEntryComponent: React.FC<JournalEntryProps> = ({
     });
   };
 
-  const textColor = theme === 'dark' ? '#FFFFFF' : '#000000';
   const subtleTextColor = theme === 'dark' ? '#888888' : '#666666';
 
   return (
-    <View style={styles.container}>
+    <View className="my-2">
       {/* Entry indicator and header */}
-      <View style={styles.entryHeaderContainer}>
+      <View className="flex-row items-start mb-2">
         {/* Entry bullet indicator */}
-        <View style={styles.entryIndicator}>
+        <View className="items-center mr-3 pt-1">
           {!isNewEntry && entry && (
-            <View style={[styles.entryBullet, { backgroundColor: personalization.accentColor }]} />
+            <View className="w-2 h-2 rounded-full mb-1" style={{ backgroundColor: personalization.accentColor }} />
           )}
           {!isNewEntry && entry && (
-            <View style={[styles.entryLine, { backgroundColor: subtleTextColor }]} />
+            <View
+              style={{
+                width: StyleSheet.hairlineWidth,
+                height: 20,
+                backgroundColor: subtleTextColor,
+                opacity: 0.3,
+              }}
+            />
           )}
         </View>
 
-        {/* Entry header with timestamp and preview */}
+        {/* Entry header with timestamp and actions */}
         {entry && (
-          <View style={styles.header}>
-            <View style={styles.entryInfo}>
-              <Text style={[styles.timeText, { color: subtleTextColor }]}>
+          <View className="flex-row justify-between items-center mb-2 px-1">
+            <View className="flex-1 flex-row items-center">
+              <Text className="text-[11px] italic min-w-[45px]" style={{ color: subtleTextColor }}>
                 {formatTime(entry.created_at)}
               </Text>
-              {/* <Text style={[styles.previewText, { color: subtleTextColor }]}>
-                {content.trim().substring(0, 40)}{content.trim().length > 40 ? '...' : ''}
-              </Text> */}
               {isSaving && (
-                <View style={styles.savingIndicator}>
-                  <MaterialIcons 
-                    name="sync" 
-                    size={12} 
-                    color={subtleTextColor} 
-                  />
-                  <Text style={[styles.savingText, { color: subtleTextColor }]}>
+                <View className="flex-row items-center ml-2">
+                  <MaterialIcons name="sync" size={12} color={subtleTextColor} />
+                  <Text className="text-[11px] italic" style={{ color: subtleTextColor }}>
                     Saving...
                   </Text>
                 </View>
               )}
             </View>
-            <View style={styles.entryActions}>
-              {/* Show save icon for existing entries only when focused or has changes, for new entries only when changes exist */}
+            <View className="flex-row items-center mr-3">
               {((entry && onUpdate && (isTextFocused || hasChanges)) || (isNewEntry && hasChanges)) && !isSaving && (
                 <TouchableOpacity 
-                  style={[styles.saveIcon, { 
+                  className="w-6 h-6 rounded-full justify-center items-center ml-2"
+                  style={{ 
                     backgroundColor: hasChanges ? personalization.accentColor : `${personalization.accentColor}60`,
                     opacity: isSaving ? 0.6 : 1
-                  }]}
+                  }}
                   onPress={handleManualSave}
                   disabled={isSaving || (!hasChanges && !!entry)}
                 >
                   <MaterialIcons 
-                    name={isSaving ? "sync" : "check"}
+                    name={isSaving ? 'sync' : 'check'}
                     size={16} 
                     color="#FFFFFF" 
                   />
@@ -286,7 +285,8 @@ export const JournalEntryComponent: React.FC<JournalEntryProps> = ({
               )}
               {onDelete && (
                 <TouchableOpacity 
-                  style={[styles.deleteIcon, { backgroundColor: '#FF6B6B' }]}
+                  className="w-6 h-6 rounded-full justify-center items-center ml-2"
+                  style={{ backgroundColor: '#FF6B6B' }}
                   onPress={handleDelete}
                 >
                   <MaterialIcons 
@@ -302,22 +302,23 @@ export const JournalEntryComponent: React.FC<JournalEntryProps> = ({
       </View>
 
       {/* Content input aligned with bullet on same baseline */}
-      <View style={[styles.contentRow, { minHeight: lineStep }]}>
+      <View className="flex-row items-start" style={{ minHeight: lineStep }}>
         {/* Entry bullet positioned to align with text baseline */}
-        <View style={[styles.contentBulletContainer, { paddingTop: bulletCenterOffset }]}>
+        <View className="w-5 items-center justify-start mr-[1px]" style={{ paddingTop: bulletCenterOffset }}>
           {!entry && isNewEntry && (
             <View 
-              style={[
-                styles.contentBullet, 
-                { width: bulletDiameter, height: bulletDiameter, borderRadius: bulletRadius },
-                { backgroundColor: personalization.accentColor }
-              ]} 
+              style={{
+                width: bulletDiameter,
+                height: bulletDiameter,
+                borderRadius: bulletRadius,
+                backgroundColor: personalization.accentColor,
+              }} 
             />
           )}
         </View>
         
-        <View style={styles.contentContainer}>
-          <View style={styles.textInputContainer}>
+        <View className="flex-1 flex-row items-start min-h-[60px]">
+          <View className="flex-1">
             <JournalTextInput
               personalization={personalization}
               onTextChange={handleContentChange}
@@ -331,11 +332,12 @@ export const JournalEntryComponent: React.FC<JournalEntryProps> = ({
           {/* Voice recording button inline with text input - only for new entries */}
           {isNewEntry && (
             <TouchableOpacity
-              style={[
-                styles.inlineVoiceButton,
-                isRecording && styles.inlineVoiceButtonRecording,
-                (isSaving || isTranscribing) && styles.inlineVoiceButtonDisabled
-              ]}
+              className="w-8 h-8 rounded-full justify-center items-center ml-2 border"
+              style={{
+                backgroundColor: isRecording ? 'rgba(255, 59, 48, 0.1)' : 'transparent',
+                borderColor: isRecording ? '#FF3B30' : 'transparent',
+                opacity: isSaving || isTranscribing ? 0.5 : 1,
+              }}
               onPress={handleVoiceRecord}
               disabled={isSaving || isTranscribing}
               accessibilityLabel={isRecording ? "Stop voice recording" : "Start voice recording"}
@@ -354,9 +356,9 @@ export const JournalEntryComponent: React.FC<JournalEntryProps> = ({
           
           {/* Inline save button */}
           {isNewEntry && hasChanges && (
-            <View style={styles.inlineSaveContainer}>
+            <View className="ml-2 justify-center">
               {isSaving ? (
-                <View style={styles.inlineSavingIndicator}>
+                <View className="w-7 h-7 justify-center items-center">
                   <MaterialIcons 
                     name="sync" 
                     size={16} 
@@ -365,7 +367,8 @@ export const JournalEntryComponent: React.FC<JournalEntryProps> = ({
                 </View>
               ) : (
                 <TouchableOpacity 
-                  style={[styles.inlineSaveButton, { backgroundColor: personalization.accentColor }]}
+                  className="w-7 h-7 rounded-full justify-center items-center"
+                  style={{ backgroundColor: personalization.accentColor }}
                   onPress={handleManualSave}
                 >
                   <MaterialIcons 
@@ -382,18 +385,24 @@ export const JournalEntryComponent: React.FC<JournalEntryProps> = ({
 
       {/* Voice recording status indicators */}
       {isRecording && (
-        <View style={styles.recordingIndicator}>
+        <View
+          className="flex-row items-center justify-center mt-2 px-3 py-1.5 rounded-xl border mx-6"
+          style={{ backgroundColor: 'rgba(255, 59, 48, 0.1)', borderColor: '#FF3B30' }}
+        >
           <MaterialIcons name="fiber-manual-record" size={12} color="#FF3B30" />
-          <Text style={[styles.recordingText, { color: '#FF3B30' }]}>
+          <Text className="text-xs ml-1.5 font-medium" style={{ color: '#FF3B30' }}>
             Recording... Tap mic to stop
           </Text>
         </View>
       )}
       
       {isTranscribing && (
-        <View style={styles.transcribingIndicator}>
+        <View
+          className="flex-row items-center justify-center mt-2 px-3 py-1.5 rounded-xl border mx-6"
+          style={{ backgroundColor: 'rgba(52, 199, 89, 0.1)', borderColor: '#34C759' }}
+        >
           <ActivityIndicator size="small" color="#34C759" />
-          <Text style={[styles.transcribingText, { color: '#34C759' }]}>
+          <Text className="text-xs ml-1.5 font-medium" style={{ color: '#34C759' }}>
             Converting speech to text...
           </Text>
         </View>
@@ -402,209 +411,4 @@ export const JournalEntryComponent: React.FC<JournalEntryProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 8,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  entryInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 8,
-  },
-  timeText: {
-    fontSize: 11,
-    fontStyle: 'italic',
-    minWidth: 45,
-  },
-  previewText: {
-    fontSize: 11,
-    fontStyle: 'italic',
-    flex: 1,
-    opacity: 0.8,
-  },
-  savingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginLeft: 8,
-  },
-  savingText: {
-    fontSize: 11,
-    fontStyle: 'italic',
-  },
-  saveIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  entryActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  deleteIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-    marginRight: 4, // Add margin from right edge
-  },
-  contentRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    minHeight: 32, // Match line height
-  },
-  contentBulletContainer: {
-    width: 20,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 32, // Start on second line (32px down)
-    marginRight: 1, // Reduce gap between bullet and text
-  },
-  contentBullet: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  contentContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    minHeight: 60,
-  },
-  textInputContainer: {
-    flex: 1,
-  },
-  inlineSaveContainer: {
-    marginLeft: 8,
-    justifyContent: 'center',
-  },
-  inlineSaveButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  inlineSavingIndicator: {
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  voiceButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-    backgroundColor: 'transparent',
-  },
-  voiceButtonRecording: {
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-  },
-  voiceButtonDisabled: {
-    opacity: 0.5,
-  },
-  recordingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-    marginHorizontal: 24,
-  },
-  recordingText: {
-    fontSize: 12,
-    marginLeft: 6,
-    fontWeight: '500',
-  },
-  transcribingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: 'rgba(52, 199, 89, 0.1)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#34C759',
-    marginHorizontal: 24,
-  },
-  transcribingText: {
-    fontSize: 12,
-    marginLeft: 6,
-    fontWeight: '500',
-  },
-  inlineVoiceButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  inlineVoiceButtonRecording: {
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    borderColor: '#FF3B30',
-  },
-  inlineVoiceButtonDisabled: {
-    opacity: 0.5,
-  },
-  newEntryFooter: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginTop: 8,
-    paddingHorizontal: 4,
-  },
-  entryHeaderContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  entryIndicator: {
-    alignItems: 'center',
-    marginRight: 12,
-    paddingTop: 4, // Align bullet with text baseline
-  },
-  entryBullet: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginBottom: 4,
-  },
-  entryLine: {
-    width: 1,
-    height: 20,
-    opacity: 0.3,
-  },
-});
+// Stylesheet removed in favor of NativeWind className utilities and inline dynamic styles

@@ -8,7 +8,9 @@ dependencies = [
     "crewai>=0.165.1",
     "elevenlabs>=2.12.1",
     "fastapi>=0.116.1",
+    "openai>=1.0.0",
     "python-dotenv>=1.1.1",
     "python-multipart>=0.0.20",
+    "requests>=2.32.5",
     "uvicorn>=0.35.0",
 ]

@@ -1,33 +1,25 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   Appearance,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
-  StyleSheet,
   TouchableOpacity,
   View,
   ScrollView,
-  Text,
-  PixelRatio,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
 // Removed gesture handling - no horizontal swipe navigation
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Removed BackgroundPatterns - using only clean blank background
 import { DateNavigationHeader } from '../components/DateNavigationHeader';
-import { JournalTextInput } from '../components/JournalTextInput';
-import { SpiralBinding } from '../components/SpiralBinding';
 import { JournalEntryComponent } from '../components/JournalEntry';
 import { colorPresets } from '../constants/colorPresets';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { createEntry, setCurrentDate, updateEntry } from '../store/slices/journalSlice';
+import { setCurrentDate } from '../store/slices/journalSlice';
 import { setColors } from '../store/slices/settingsSlice';
-import { formatDate } from '../utils/dateHelpers';
 import { useJournalService } from '../database/journalService';
 import { JournalEntry } from '../database/schema';
 
@@ -47,6 +39,20 @@ export const JournalScreen: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   
   const currentEntry = entries[currentDate];
+
+  // Ensure unique entries by id before rendering to avoid duplicate React keys
+  const entriesToRender = useMemo(() => {
+    const seen = new Set<number>();
+    const unique: JournalEntry[] = [];
+    for (const e of currentDateEntries) {
+      if (!seen.has(e.id)) {
+        seen.add(e.id);
+        unique.push(e);
+      }
+    }
+    // Render latest items first
+    return unique.slice().reverse();
+  }, [currentDateEntries]);
 
   // Load entries for current date on mount and when date changes
   useEffect(() => {
@@ -87,7 +93,8 @@ export const JournalScreen: React.FC = () => {
         updated_at: new Date().toISOString(),
       };
       
-      setCurrentDateEntries(prevEntries => [newEntry, ...prevEntries]);
+      // Prevent duplicates by id in optimistic state
+      setCurrentDateEntries(prevEntries => [newEntry, ...prevEntries.filter(e => e.id !== newEntry.id)]);
     } catch (error) {
       console.error('Error creating entry:', error);
       // Fallback to full reload on error
@@ -171,7 +178,7 @@ export const JournalScreen: React.FC = () => {
   const screenBackgroundColor = actualTheme === 'dark' ? '#000000' : '#F5F5F5';
 
   return (
-      <View style={[styles.container, { backgroundColor: screenBackgroundColor }]}>
+      <View className="flex-1" style={{ backgroundColor: screenBackgroundColor }}>
         <StatusBar barStyle={getStatusBarStyle()} />
         
         <DateNavigationHeader
@@ -183,94 +190,85 @@ export const JournalScreen: React.FC = () => {
           actualTheme={actualTheme}
         />
 
-
-        <View style={styles.content}>
-          <View style={styles.journalContainer}>
-            <SpiralBinding theme={actualTheme} />
-            
-            <View style={styles.textContainer}>
-                <View style={[styles.textAreaContainer, { backgroundColor: personalization.backgroundColor }]}>
-                  <KeyboardAvoidingView
-                    style={styles.keyboardAvoidingView}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    keyboardVerticalOffset={insets.top}
+        <View className="flex-1">
+          <View className="flex-1 relative overflow-hidden">
+            <View className="flex-1 z-[1] ml-4 mt-4 mr-4 mb-0">
+              <View className="flex-1 relative overflow-hidden" style={{ backgroundColor: personalization.backgroundColor }}>
+                <KeyboardAvoidingView
+                  className="flex-1"
+                  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                  keyboardVerticalOffset={insets.top}
+                >
+                  <ScrollView 
+                    className="flex-1" 
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, paddingBottom: 0 }}
+                    key={refreshKey}
+                    maintainVisibleContentPosition={{
+                      minIndexForVisible: 0,
+                      autoscrollToTopThreshold: 10,
+                    }}
                   >
-                    <ScrollView 
-                      style={styles.journalScrollView} 
-                      showsVerticalScrollIndicator={false}
-                      contentContainerStyle={styles.scrollContent}
-                      key={refreshKey}
-                      maintainVisibleContentPosition={{
-                        minIndexForVisible: 0,
-                        autoscrollToTopThreshold: 10,
-                      }}
-                    >
-                      <View style={styles.quickColorsRow}>
-                        {colorPresets.map((preset) => {
-                          const isActive = personalization.backgroundColor === preset.bg;
-                          return (
-                            <TouchableOpacity
-                              key={preset.name}
-                              style={[
-                                styles.quickColorItem,
-                                {
+                    <View className="flex-row items-center justify-center px-4 py-2 gap-2.5">
+                      {colorPresets.map((preset) => {
+                        const isActive = personalization.backgroundColor === preset.bg;
+                        return (
+                          <TouchableOpacity
+                            key={preset.name}
+                            className="w-7 h-7 rounded-full items-center justify-center"
+                            style={{
+                              backgroundColor: preset.bg,
+                              borderColor: isActive ? preset.accent : 'transparent',
+                              borderWidth: isActive ? 2 : 0,
+                            }}
+                            onPress={async () => {
+                              if (personalization.hapticFeedback) {
+                                try {
+                                  await Haptics.selectionAsync();
+                                } catch {}
+                              }
+                              dispatch(
+                                setColors({
                                   backgroundColor: preset.bg,
-                                  borderColor: isActive ? preset.accent : 'transparent',
-                                  borderWidth: isActive ? 2 : 0,
-                                },
-                              ]}
-                              onPress={async () => {
-                                if (personalization.hapticFeedback) {
-                                  try {
-                                    await Haptics.selectionAsync();
-                                  } catch {}
-                                }
-                                dispatch(
-                                  setColors({
-                                    backgroundColor: preset.bg,
-                                    textColor: preset.text,
-                                    accentColor: preset.accent,
-                                    lineColor: preset.line,
-                                  })
-                                );
-                              }}
-                              accessibilityLabel={`Apply ${preset.name} colors`}
-                            >
-                              {isActive && (
-                                <View
-                                  style={[
-                                    styles.quickColorAccent,
-                                    { backgroundColor: preset.accent },
-                                  ]}
-                                />
-                              )}
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                      {/* Render existing entries - oldest first */}
-                      {[...currentDateEntries].reverse().map((entry) => (
-                        <JournalEntryComponent
-                          key={entry.id}
-                          entry={entry}
-                          personalization={personalization}
-                          theme={actualTheme}
-                          onSave={handleCreateEntry}
-                          onUpdate={handleUpdateEntry}
-                          onDelete={handleDeleteEntry}
-                        />
-                      ))}
-                      
-                      {/* New entry input positioned immediately after last entry */}
+                                  textColor: preset.text,
+                                  accentColor: preset.accent,
+                                  lineColor: preset.line,
+                                })
+                              );
+                            }}
+                            accessibilityLabel={`Apply ${preset.name} colors`}
+                          >
+                            {isActive && (
+                              <View
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: preset.accent }}
+                              />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    {entriesToRender.map((entry) => (
                       <JournalEntryComponent
-                        isNewEntry={true}
+                        key={entry.id}
+                        entry={entry}
                         personalization={personalization}
                         theme={actualTheme}
                         onSave={handleCreateEntry}
+                        onUpdate={handleUpdateEntry}
+                        onDelete={handleDeleteEntry}
                       />
-                    </ScrollView>
-                  </KeyboardAvoidingView>
-                </View>
+                    ))}
+                    
+                    <JournalEntryComponent
+                      isNewEntry={true}
+                      personalization={personalization}
+                      theme={actualTheme}
+                      onSave={handleCreateEntry}
+                    />
+                  </ScrollView>
+                </KeyboardAvoidingView>
+              </View>
             </View>
           </View>
         </View>
@@ -278,63 +276,4 @@ export const JournalScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-  },
-  journalContainer: {
-    flex: 1,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  textContainer: {
-    flex: 1,
-    zIndex: 1,
-    marginLeft: 40, // Space for spiral binding
-    marginTop: 16, // Gap between header and page
-    marginBottom: 0, // Let content extend to tabs
-    marginRight: 16, // Right margin for balance
-  },
-  textAreaContainer: {
-    flex: 1,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  quickColorsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16, // Reduced padding since no settings button
-    paddingVertical: 8,
-    gap: 10,
-  },
-  quickColorItem: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickColorAccent: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  journalScrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    paddingBottom: 0,
-  },
-  newEntrySpacing: {
-    height: 8,
-  },
-});
+ 

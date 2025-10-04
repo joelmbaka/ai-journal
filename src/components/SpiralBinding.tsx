@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
-import Svg, { Path, Defs, Mask, Rect, Circle, G } from 'react-native-svg';
+import { View, Dimensions, PixelRatio, StyleSheet } from 'react-native';
+import Svg, { Defs, Mask, Rect, Circle } from 'react-native-svg';
 
 interface SpiralBindingProps {
   theme: 'light' | 'dark';
@@ -48,9 +48,16 @@ export const SpiralBinding: React.FC<SpiralBindingProps> = ({ theme }) => {
   };
   
   return (
-    <View style={[styles.bindingContainer, { backgroundColor: theme === 'dark' ? '#2A2A2A' : '#E8E8E8' }]}>
+    <View
+      className="absolute left-2 top-4 bottom-0 w-8 z-10"
+      style={{
+        backgroundColor: theme === 'dark' ? '#2A2A2A' : '#E8E8E8',
+        borderRightColor: '#C0C0C0',
+        borderRightWidth: StyleSheet.hairlineWidth,
+      }}
+    >
       {/* Spiral + holes (SVG) */}
-      <View style={styles.spiralContainer}>
+      <View className="absolute left-2 top-4 bottom-0 w-8 z-[5]">
         <Svg height="100%" width="32" style={{ position: 'absolute' }}>
           <Defs>
             {/* Reveal the wire on the left side, and inside the circular holes */}
@@ -81,55 +88,27 @@ export const SpiralBinding: React.FC<SpiralBindingProps> = ({ theme }) => {
               r={HOLE_RADIUS}
               fill="none"
               stroke="#999999"
-              strokeWidth={0.8}
+              strokeWidth={StyleSheet.hairlineWidth}
+              vectorEffect="non-scaling-stroke"
             />
           ))}
         </Svg>
       </View>
       
       {/* Binding edge shadow */}
-      <View style={[
-        styles.bindingEdge,
-        {
+      <View
+        className="absolute right-0 top-0 bottom-0"
+        style={{
+          width: PixelRatio.roundToNearestPixel(2),
           backgroundColor: theme === 'dark' ? '#1F1F1F' : '#D5D5D5',
           shadowColor: shadowColor,
-        }
-      ]} />
+          shadowOffset: { width: 2, height: 0 },
+          shadowOpacity: 0.2,
+          shadowRadius: 3,
+          elevation: 3,
+        }}
+      />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  bindingContainer: {
-    width: 32,
-    position: 'absolute',
-    left: 8, // Move away from screen edge
-    top: 16, // Match text area top margin
-    bottom: 0, // Extend to tabs
-    borderRightWidth: 1,
-    borderRightColor: '#C0C0C0',
-    zIndex: 10,
-  },
-  spiralContainer: {
-    position: 'absolute',
-    left: 8, // Match binding container offset
-    top: 16, // Match binding container top margin
-    bottom: 0, // Extend to tabs
-    width: 32,
-    zIndex: 5,
-  },
-  bindingEdge: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 2,
-    shadowOffset: {
-      width: 2,
-      height: 0,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-});

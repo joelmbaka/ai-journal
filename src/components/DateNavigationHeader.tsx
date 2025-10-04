@@ -1,9 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  Dimensions,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -22,8 +19,6 @@ interface DateNavigationHeaderProps {
   screenBackgroundColor?: string;
   actualTheme?: string;
 }
-
-const { width } = Dimensions.get('window');
 
 export const DateNavigationHeader: React.FC<DateNavigationHeaderProps> = ({
   currentDate,
@@ -58,9 +53,9 @@ export const DateNavigationHeader: React.FC<DateNavigationHeaderProps> = ({
 
   return (
     <>
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View className="flex-row items-center justify-between px-4 py-4" style={{ paddingTop: insets.top, minHeight: 56 }}>
         <TouchableOpacity
-          style={styles.navButton}
+          className="p-2 rounded-full"
           onPress={() => navigateDate('prev')}
         >
           <MaterialIcons
@@ -71,22 +66,22 @@ export const DateNavigationHeader: React.FC<DateNavigationHeaderProps> = ({
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.dateContainer}
+          className="flex-1 items-center relative"
           onPress={() => setShowDatePicker(true)}
         >
-          <Text style={[styles.dateText, { color: navTextColor }]}> 
+          <Text className="text-lg font-semibold text-center" style={{ color: navTextColor }}> 
             {formatDisplayDate(currentDate)}
           </Text>
           {isToday(currentDate) && (
-            <View style={[styles.todayIndicator, { backgroundColor: navAccentColor }]} />
+            <View className="absolute w-[6px] h-[6px] rounded-full bottom-[-6px]" style={{ backgroundColor: navAccentColor }} />
           )}
           {hasEntry && (
-            <View style={[styles.entryIndicator, { backgroundColor: navAccentColor }]} />
+            <View className="absolute w-2 h-2 rounded-full top-[-4px] right-[-8px]" style={{ backgroundColor: navAccentColor }} />
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.navButton}
+          className="p-2 rounded-full"
           onPress={() => navigateDate('next')}
         >
           <MaterialIcons
@@ -111,41 +106,3 @@ export const DateNavigationHeader: React.FC<DateNavigationHeaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  navButton: {
-    padding: 8,
-    borderRadius: 20,
-  },
-  dateContainer: {
-    flex: 1,
-    alignItems: 'center',
-    position: 'relative',
-  },
-  dateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  todayIndicator: {
-    position: 'absolute',
-    bottom: -6,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  entryIndicator: {
-    position: 'absolute',
-    top: -4,
-    right: -8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-});

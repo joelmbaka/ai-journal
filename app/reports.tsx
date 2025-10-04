@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import { useAppSelector } from '../src/hooks/redux';
-import { RootState } from '../src/store';
 import { useReportsService, Report } from '../src/database/reportsService';
 import { sttService } from '../src/services/sttService';
 import { generateAIReport, renderAIReportToText } from '../src/services/backend';
@@ -12,9 +10,11 @@ import { useAuth } from '../src/context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { SlideInView } from '../src/components/SlideInView';
 import { useTabTransition } from '../src/context/TabTransitionContext';
+import { useAppTheme } from '../src/theme/useAppTheme';
 
 
 const ReportCard: React.FC<{ report: Report; onPress: () => void; onDelete: () => void }> = ({ report, onPress, onDelete }) => {
+  const { tokens } = useAppTheme();
   const getIconName = (type: Report['type']) => {
     switch (type) {
       case 'mood': return 'mood';
@@ -44,35 +44,35 @@ const ReportCard: React.FC<{ report: Report; onPress: () => void; onDelete: () =
   };
 
   return (
-    <TouchableOpacity style={styles.reportCard} onPress={onPress}>
-      <View style={styles.reportHeader}>
-        <View style={[styles.reportIcon, { backgroundColor: getTypeColor(report.type) }]}>
+    <TouchableOpacity className="rounded-xl p-4 mb-3 shadow-sm" style={{ backgroundColor: tokens.colors.card }} onPress={onPress}>
+      <View className="flex-row items-center mb-2">
+        <View className="w-12 h-12 rounded-full items-center justify-center mr-3" style={{ backgroundColor: getTypeColor(report.type) }}>
           <MaterialIcons name={getIconName(report.type)} size={24} color="#FFFFFF" />
         </View>
-        <View style={styles.reportInfo}>
-          <Text style={styles.reportTitle}>{report.title}</Text>
-          <Text style={styles.reportDescription}>{getDescription()}</Text>
+        <View className="flex-1">
+          <Text className="text-base font-semibold mb-1" style={{ color: tokens.colors.text }}>{report.title}</Text>
+          <Text className="text-sm leading-5" style={{ color: tokens.colors.muted }}>{getDescription()}</Text>
         </View>
-        <View style={styles.reportStatus}>
+        <View className="items-center">
           <TouchableOpacity
             onPress={onDelete}
             accessibilityLabel="Delete report"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={{ marginRight: 8 }}
           >
-            <MaterialIcons name="delete-outline" size={22} color="#FF3B30" />
+            <MaterialIcons name="delete-outline" size={22} color={tokens.colors.error} />
           </TouchableOpacity>
           {report.status === 'generating' ? (
-            <View style={styles.generatingBadge}>
-              <MaterialIcons name="sync" size={16} color="#FF9500" />
-              <Text style={styles.generatingText}>Generating...</Text>
+            <View className="flex-row items-center px-2 py-1 rounded-xl" style={{ backgroundColor: tokens.colors.warningContainer }}>
+              <MaterialIcons name="sync" size={16} color={tokens.colors.warning} />
+              <Text className="text-xs ml-1 font-medium" style={{ color: tokens.colors.warning }}>Generating...</Text>
             </View>
           ) : (
-            <MaterialIcons name="chevron-right" size={24} color="#C7C7CC" />
+            <MaterialIcons name="chevron-right" size={24} color={tokens.colors.icon} />
           )}
         </View>
       </View>
-      <Text style={styles.reportDate}>
+      <Text className="text-xs mt-1" style={{ color: tokens.colors.secondaryText }}>
         {new Date(report.createdAt).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
@@ -85,25 +85,26 @@ const ReportCard: React.FC<{ report: Report; onPress: () => void; onDelete: () =
 };
 
 const ReportDetailModal: React.FC<{ visible: boolean; report: Report | null; onClose: () => void }> = ({ visible, report, onClose }) => {
+  const { tokens } = useAppTheme();
   if (!visible) return null;
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: tokens.colors.background }}>
+        <View className="flex-row items-center justify-between px-5 py-4 border-b" style={{ borderBottomWidth: StyleSheet.hairlineWidth, backgroundColor: tokens.colors.surface, borderBottomColor: tokens.colors.border }}>
           <TouchableOpacity onPress={onClose}>
-            <Text style={styles.cancelButton}>Close</Text>
+            <Text className="text-base" style={{ color: tokens.colors.secondaryText }}>Close</Text>
           </TouchableOpacity>
-          <Text style={styles.modalTitle} numberOfLines={1}>{report?.title ?? 'Report'}</Text>
+          <Text className="text-lg font-semibold" style={{ color: tokens.colors.text }} numberOfLines={1}>{report?.title ?? 'Report'}</Text>
           <View style={{ width: 64 }} />
         </View>
-        <ScrollView style={styles.modalContent}>
+        <ScrollView className="flex-1 p-5">
           {!!report && (
             <>
-              <Text style={styles.sectionTitle}>AI Report</Text>
-              <Text style={styles.resultText}>{report.content}</Text>
-              <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Prompt</Text>
-              <Text style={styles.resultText}>{report.prompt}</Text>
-              <Text style={[styles.reportDate, { marginTop: 12 }]}>
+              <Text className="text-xl font-semibold mb-4" style={{ color: tokens.colors.text }}>AI Report</Text>
+              <Text className="mt-2 text-sm leading-5" style={{ color: tokens.colors.text }}>{report.content}</Text>
+              <Text className="text-xl font-semibold mb-4 mt-4" style={{ color: tokens.colors.text }}>Prompt</Text>
+              <Text className="mt-2 text-sm leading-5" style={{ color: tokens.colors.text }}>{report.prompt}</Text>
+              <Text className="text-xs mt-3" style={{ color: tokens.colors.secondaryText }}>
                 {new Date(report.createdAt).toLocaleString()}
               </Text>
             </>
@@ -118,6 +119,7 @@ type StepStatus = 'pending' | 'active' | 'done';
 interface StepItemState { key: string; label: string; status: StepStatus }
 
 const AIReportModal: React.FC<{ visible: boolean; onClose: () => void; onReportGenerated: () => void }> = ({ visible, onClose, onReportGenerated }) => {
+  const { tokens } = useAppTheme();
   const [prompt, setPrompt] = useState('');
   const [sentPrompt, setSentPrompt] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -288,119 +290,122 @@ const AIReportModal: React.FC<{ visible: boolean; onClose: () => void; onReportG
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: tokens.colors.background }}>
+        <View className="flex-row items-center justify-between px-5 py-4 border-b" style={{ borderBottomWidth: StyleSheet.hairlineWidth, backgroundColor: tokens.colors.surface, borderBottomColor: tokens.colors.border }}>
           <TouchableOpacity onPress={onClose} disabled={isGenerating}>
-            <Text style={[styles.cancelButton, isGenerating && styles.textDisabled]}>Cancel</Text>
+            <Text className="text-base" style={{ color: isGenerating ? tokens.colors.icon : tokens.colors.secondaryText }}>Cancel</Text>
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Generate AI Report</Text>
+          <Text className="text-lg font-semibold" style={{ color: tokens.colors.text }}>Generate AI Report</Text>
           <TouchableOpacity 
             onPress={handleGenerateReport} 
             disabled={isGenerating}
-            style={[styles.generateButton, isGenerating && styles.generateButtonDisabled]}
+            className="px-4 py-2 rounded-lg"
+            style={{ backgroundColor: isGenerating ? tokens.colors.icon : tokens.colors.accent }}
           >
-            <Text style={[styles.generateButtonText, isGenerating && styles.generateButtonTextDisabled]}>
+            <Text className="text-base font-semibold text-white">
               {isGenerating ? 'Generating...' : 'Generate'}
             </Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.modalContent}>
-          <Text style={styles.sectionTitle}>What would you like to analyze?</Text>
-          <Text style={styles.sectionSubtitle}>Describe what insights you'd like from your journal entries</Text>
+        <ScrollView className="flex-1 p-5">
+          <Text className="text-xl font-semibold mb-4" style={{ color: tokens.colors.text }}>What would you like to analyze?</Text>
+          <Text className="text-sm mb-5 leading-5" style={{ color: tokens.colors.muted }}>Describe what insights you'd like from your journal entries</Text>
           
-          <View style={styles.promptInputContainer}>
+          <View className="flex-row items-start rounded-xl border overflow-hidden" style={{ backgroundColor: tokens.colors.surface, borderColor: tokens.colors.border }}>
             <TextInput
-              style={styles.promptInput}
+              className="flex-1 p-4 text-base min-h-[120px] max-h-[200px]"
               value={prompt}
               onChangeText={setPrompt}
               placeholder="e.g., 'Analyze my mood patterns over the last month' or 'What are my main stress triggers?'"
-              placeholderTextColor="#999999"
+              placeholderTextColor={tokens.colors.muted}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
+              style={{ color: tokens.colors.text }}
             />
             <TouchableOpacity 
-              style={[
-                styles.voiceButton,
-                isRecording && styles.voiceButtonRecording,
-                (isGenerating || isTranscribing) && styles.voiceButtonDisabled
-              ]}
+              className="p-4 items-center justify-center border-l"
+              style={{
+                backgroundColor: isRecording ? tokens.colors.recordingContainer : 'transparent',
+                opacity: (isGenerating || isTranscribing) ? 0.5 : 1,
+                borderLeftColor: tokens.colors.border,
+              }}
               onPress={handleVoiceRecord}
               disabled={isGenerating || isTranscribing}
             >
               {isTranscribing ? (
-                <ActivityIndicator size="small" color="#007AFF" />
+                <ActivityIndicator size="small" color={tokens.colors.accent} />
               ) : (
                 <MaterialIcons 
                   name={isRecording ? "stop" : "mic"} 
                   size={24} 
-                  color={isRecording ? "#FF3B30" : "#007AFF"} 
+                  color={isRecording ? tokens.colors.error : tokens.colors.accent} 
                 />
               )}
             </TouchableOpacity>
           </View>
 
           {sentPrompt && (
-            <View style={styles.sentMessageContainer}>
-              <View style={styles.sentMessageBubble}>
-                <Text style={styles.sentMessageText}>{sentPrompt}</Text>
+            <View className="mt-5 items-end">
+              <View className="rounded-[18px] px-4 py-3 max-w-[80%]" style={{ backgroundColor: tokens.colors.accent }}>
+                <Text className="text-white text-base leading-5">{sentPrompt}</Text>
               </View>
-              <Text style={styles.sentMessageLabel}>You</Text>
+              <Text className="text-xs mt-1 mr-2" style={{ color: tokens.colors.secondaryText }}>You</Text>
             </View>
           )}
           
           {isGenerating && (
-            <View style={styles.checklistContainer}>
+            <View className="mt-5 p-4 rounded-xl border" style={{ backgroundColor: tokens.colors.surface, borderColor: tokens.colors.border }}>
               {steps.map((s, idx) => (
-                <View key={s.key} style={styles.checklistItem}>
+                <View key={s.key} className="flex-row items-center py-2">
                   {s.status === 'done' ? (
-                    <MaterialIcons name="check-circle" size={20} color="#34C759" />
+                    <MaterialIcons name="check-circle" size={20} color={tokens.colors.success} />
                   ) : s.status === 'active' ? (
-                    <ActivityIndicator size="small" color="#007AFF" />
+                    <ActivityIndicator size="small" color={tokens.colors.accent} />
                   ) : (
-                    <MaterialIcons name="radio-button-unchecked" size={20} color="#C7C7CC" />
+                    <MaterialIcons name="radio-button-unchecked" size={20} color={tokens.colors.icon} />
                   )}
-                  <Text style={[styles.checklistLabel, s.status === 'done' && styles.checklistDone]}>
+                  <Text className="ml-3 text-sm" style={{ color: s.status === 'done' ? tokens.colors.success : tokens.colors.text }}>
                     {s.label}
                   </Text>
                 </View>
               ))}
-              <Text style={styles.checklistHint}>This may take a moment. Keep the app open.</Text>
+              <Text className="text-xs mt-2 text-center" style={{ color: tokens.colors.secondaryText }}>This may take a moment. Keep the app open.</Text>
             </View>
           )}
 
           {!!resultText && (
-            <View style={styles.resultContainer}>
-              <Text style={styles.sectionTitle}>AI Report</Text>
-              <Text style={styles.resultText}>{resultText}</Text>
-              <TouchableOpacity style={styles.closeButton} onPress={() => { onReportGenerated(); onClose(); setResultText(null); setErrorText(null); setSteps(prev => prev.map(s => ({...s, status: 'pending'}))); }}>
-                <Text style={styles.closeButtonText}>Close</Text>
+            <View className="mt-4 rounded-xl border p-4" style={{ backgroundColor: tokens.colors.surface, borderColor: tokens.colors.border }}>
+              <Text className="text-xl font-semibold mb-4" style={{ color: tokens.colors.text }}>AI Report</Text>
+              <Text className="mt-2 text-sm leading-5" style={{ color: tokens.colors.text }}>{resultText}</Text>
+              <TouchableOpacity className="mt-4 self-end rounded-lg py-2.5 px-4" style={{ backgroundColor: tokens.colors.accent }} onPress={() => { onReportGenerated(); onClose(); setResultText(null); setErrorText(null); setSteps(prev => prev.map(s => ({...s, status: 'pending'}))); }}>
+                <Text className="text-white text-sm font-semibold">Close</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {!!errorText && !isGenerating && (
-            <View style={styles.resultContainer}>
-              <Text style={styles.sectionTitle}>AI Report</Text>
-              <Text style={[styles.resultText, { color: '#FF3B30' }]}>{errorText}</Text>
-              <TouchableOpacity style={styles.closeButton} onPress={() => { onReportGenerated(); onClose(); setResultText(null); setErrorText(null); setSteps(prev => prev.map(s => ({...s, status: 'pending'}))); }}>
-                <Text style={styles.closeButtonText}>Close</Text>
+            <View className="mt-4 rounded-xl border p-4" style={{ backgroundColor: tokens.colors.surface, borderColor: tokens.colors.border }}>
+              <Text className="text-xl font-semibold mb-4" style={{ color: tokens.colors.text }}>AI Report</Text>
+              <Text className="mt-2 text-sm leading-5" style={{ color: tokens.colors.error }}>{errorText}</Text>
+              <TouchableOpacity className="mt-4 self-end rounded-lg py-2.5 px-4" style={{ backgroundColor: tokens.colors.accent }} onPress={() => { onReportGenerated(); onClose(); setResultText(null); setErrorText(null); setSteps(prev => prev.map(s => ({...s, status: 'pending'}))); }}>
+                <Text className="text-white text-sm font-semibold">Close</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {isRecording && (
-            <View style={styles.recordingContainer}>
-              <MaterialIcons name="fiber-manual-record" size={16} color="#FF3B30" />
-              <Text style={styles.recordingMessage}>Recording... Tap stop when finished</Text>
+            <View className="flex-row items-center justify-center mt-5 p-4 rounded-xl border" style={{ backgroundColor: tokens.colors.recordingContainer, borderColor: tokens.colors.error }}>
+              <MaterialIcons name="fiber-manual-record" size={16} color={tokens.colors.error} />
+              <Text className="text-base ml-2 font-medium" style={{ color: tokens.colors.error }}>Recording... Tap stop when finished</Text>
             </View>
           )}
           
           {isTranscribing && (
-            <View style={styles.transcribingContainer}>
-              <ActivityIndicator size="small" color="#34C759" />
-              <Text style={styles.transcribingMessage}>Converting speech to text...</Text>
+            <View className="flex-row items-center justify-center mt-5 p-4 rounded-xl border" style={{ backgroundColor: tokens.colors.transcribingContainer, borderColor: tokens.colors.success }}>
+              <ActivityIndicator size="small" color={tokens.colors.success} />
+              <Text className="text-base ml-2 font-medium" style={{ color: tokens.colors.success }}>Converting speech to text...</Text>
             </View>
           )}
         </ScrollView>
@@ -410,7 +415,7 @@ const AIReportModal: React.FC<{ visible: boolean; onClose: () => void; onReportG
 };
 
 export default function ReportsTab() {
-  const { personalization } = useAppSelector((state: RootState) => state.settings);
+  const { tokens } = useAppTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -469,30 +474,31 @@ export default function ReportsTab() {
 
   return (
     <SlideInView>
-      <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
-      <View style={styles.header}>
-        <MaterialIcons name="assessment" size={28} color="#007AFF" />
-        <Text style={styles.headerTitle}>Reports</Text>
+      <SafeAreaView edges={['top', 'left', 'right']} className="flex-1" style={{ backgroundColor: tokens.colors.background }}>
+      <View className="flex-row items-center px-5 py-5 border-b" style={{ minHeight: 56, borderBottomWidth: StyleSheet.hairlineWidth, backgroundColor: tokens.colors.surface, borderBottomColor: tokens.colors.border }}>
+        <MaterialIcons name="assessment" size={28} color={tokens.colors.accent} />
+        <Text className="text-[22px] font-semibold ml-3" style={{ color: tokens.colors.text }}>Reports</Text>
       </View>
       
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        <View style={styles.addButtonContainer}>
+      <ScrollView className="flex-1" contentContainerStyle={{ padding: 20 }}>
+        <View className="mb-6">
           <TouchableOpacity 
-            style={styles.addButton}
+            className="flex-row items-center justify-center py-4 px-6 rounded-xl shadow-sm"
+            style={{ backgroundColor: tokens.colors.accent }}
             onPress={() => setModalVisible(true)}
           >
             <MaterialIcons name="add" size={20} color="#FFFFFF" />
-            <Text style={styles.addButtonText}>Generate New Report</Text>
+            <Text className="text-white text-base font-semibold ml-2">Generate New Report</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.reportsSection}>
-          <Text style={styles.sectionTitle}>Your Reports</Text>
+        <View className="flex-1">
+          <Text className="text-xl font-semibold mb-4" style={{ color: tokens.colors.text }}>Your Reports</Text>
           
           {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#007AFF" />
-              <Text style={styles.loadingText}>Loading reports...</Text>
+            <View className="items-center py-10">
+              <ActivityIndicator size="large" color={tokens.colors.accent} />
+              <Text className="text-base mt-3" style={{ color: tokens.colors.muted }}>Loading reports...</Text>
             </View>
           ) : (
             <>
@@ -506,10 +512,10 @@ export default function ReportsTab() {
               ))}
               
               {reports.length === 0 && (
-                <View style={styles.emptyState}>
-                  <MaterialIcons name="assessment" size={64} color="#C7C7CC" />
-                  <Text style={styles.emptyTitle}>No Reports Yet</Text>
-                  <Text style={styles.emptyDescription}>
+                <View className="items-center py-15">
+                  <MaterialIcons name="assessment" size={64} color={tokens.colors.icon} />
+                  <Text className="text-xl font-semibold mt-4 mb-2" style={{ color: tokens.colors.text }}>No Reports Yet</Text>
+                  <Text className="text-base text-center leading-6 max-w-[280px]" style={{ color: tokens.colors.muted }}>
                     Generate your first AI report to get insights about your journal entries
                   </Text>
                 </View>
@@ -535,388 +541,4 @@ export default function ReportsTab() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginLeft: 12,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 20,
-  },
-  addButtonContainer: {
-    marginBottom: 24,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#007AFF',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  reportsSection: {
-    flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 16,
-  },
-  reportCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  reportHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  reportIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  reportInfo: {
-    flex: 1,
-  },
-  reportTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 4,
-  },
-  reportDescription: {
-    fontSize: 14,
-    color: '#666666',
-    lineHeight: 20,
-  },
-  reportStatus: {
-    alignItems: 'center',
-  },
-  generatingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF3CD',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  generatingText: {
-    fontSize: 12,
-    color: '#FF9500',
-    marginLeft: 4,
-    fontWeight: '500',
-  },
-  reportDate: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyDescription: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 280,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  cancelButton: {
-    fontSize: 16,
-    color: '#8E8E93',
-  },
-  generateButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-  },
-  generateButtonDisabled: {
-    backgroundColor: '#C7C7CC',
-  },
-  generateButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  generateButtonTextDisabled: {
-    color: '#FFFFFF',
-  },
-  modalContent: {
-    flex: 1,
-    padding: 20,
-  },
-  reportTypeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-  },
-  reportTypeCardSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F8FF',
-  },
-  reportTypeContent: {
-    flex: 1,
-  },
-  reportTypeTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 4,
-  },
-  reportTypeDescription: {
-    fontSize: 14,
-    color: '#666666',
-    lineHeight: 20,
-  },
-  reportTypeTextSelected: {
-    color: '#007AFF',
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  promptInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-    overflow: 'hidden',
-  },
-  promptInput: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
-    color: '#1A1A1A',
-    minHeight: 120,
-    maxHeight: 200,
-  },
-  voiceButton: {
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderLeftWidth: 1,
-    borderLeftColor: '#E5E5E7',
-  },
-  generatingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-    padding: 20,
-    backgroundColor: '#F0F8FF',
-    borderRadius: 12,
-  },
-  generatingMessage: {
-    fontSize: 16,
-    color: '#007AFF',
-    marginLeft: 12,
-    fontWeight: '500',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666666',
-    marginTop: 12,
-  },
-  voiceButtonRecording: {
-    backgroundColor: '#FFE7E7',
-  },
-  voiceButtonDisabled: {
-    opacity: 0.5,
-  },
-  recordingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#FFE7E7',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-  },
-  recordingMessage: {
-    fontSize: 16,
-    color: '#FF3B30',
-    marginLeft: 8,
-    fontWeight: '500',
-  },
-  transcribingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#E7F7E7',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#34C759',
-  },
-  transcribingMessage: {
-    fontSize: 16,
-    color: '#34C759',
-    marginLeft: 8,
-    fontWeight: '500',
-  },
-  textDisabled: {
-    color: '#C7C7CC',
-  },
-  checklistContainer: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-  },
-  checklistItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  checklistLabel: {
-    marginLeft: 12,
-    fontSize: 14,
-    color: '#1A1A1A',
-  },
-  checklistDone: {
-    color: '#34C759',
-  },
-  checklistHint: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  resultContainer: {
-    marginTop: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-    padding: 16,
-  },
-  resultText: {
-    marginTop: 8,
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#1A1A1A',
-  },
-  closeButton: {
-    marginTop: 16,
-    alignSelf: 'flex-end',
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  closeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  sentMessageContainer: {
-    marginTop: 20,
-    alignItems: 'flex-end',
-  },
-  sentMessageBubble: {
-    backgroundColor: '#007AFF',
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    maxWidth: '80%',
-  },
-  sentMessageText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    lineHeight: 20,
-  },
-  sentMessageLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 4,
-    marginRight: 8,
-  },
-});
+// Stylesheet removed in favor of NativeWind className utilities and inline dynamic styles

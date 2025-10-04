@@ -39,9 +39,8 @@ async def generate_ai_report(request: AIReportRequest):
             "user_id": request.user_id,
             "date_range_days": request.date_range_days,
             "preferred_analysis_types": request.preferred_analysis_types or [],
-            # unified crew: pass auth token for RLS and desired match_count for search
+            # unified crew: pass auth token for RLS (match_count decided dynamically by agent)
             "user_token": request.user_token,
-            "match_count": request.match_count or 10,
         }
         
         # Run the CrewAI report generation crew
@@ -149,7 +148,7 @@ def main() -> None:
     """Run the FastAPI application using uvicorn."""
     uvicorn.run("main:app", host="0.0.0.0", port=8082, reload=True)
 """ 
-uvicorn main:app --host 0.0.0.0 --port 8082 --reload
+uvicorn main:app --host 0.0.0.0 --port 8082
  
 """
 if __name__ == "__main__":

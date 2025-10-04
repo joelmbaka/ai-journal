@@ -4,11 +4,11 @@ import React, { useEffect, useState } from 'react';
 import {
   Appearance,
     ScrollView,
-    StyleSheet,
     Text,
     TouchableOpacity,
     View,
     ActivityIndicator,
+    StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colorPresets } from '../constants/colorPresets';
@@ -80,11 +80,9 @@ export const CustomizationScreen: React.FC = () => {
     { label: 'Dark', value: 'dark' },
   ];
 
-  
-
   const renderSection = (title: string, children: React.ReactNode) => (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: screenTextColor }]}>
+    <View className="mb-8">
+      <Text className="text-xl font-semibold mb-4" style={{ color: screenTextColor }}>
         {title}
       </Text>
       {children}
@@ -106,30 +104,26 @@ export const CustomizationScreen: React.FC = () => {
     currentValue: T,
     onSelect: (value: T) => void
   ) => (
-    <View style={styles.optionGrid}>
+    <View className="flex-row flex-wrap gap-2.5">
       {options.map((option) => (
         <TouchableOpacity
           key={option.value}
-          style={[
-            styles.optionButton,
-            {
-              backgroundColor: currentValue === option.value 
-                ? screenAccentColor 
-                : screenBackgroundColor,
-              borderColor: screenAccentColor,
-            }
-          ]}
+          className="px-4 py-2 rounded-[20px] border min-w-[80px] items-center"
+          style={{
+            backgroundColor: currentValue === option.value
+              ? screenAccentColor
+              : screenBackgroundColor,
+            borderColor: screenAccentColor,
+          }}
           onPress={() => onSelect(option.value)}
         >
           <Text
-            style={[
-              styles.optionText,
-              {
-                color: currentValue === option.value 
-                  ? screenBackgroundColor 
-                  : screenTextColor,
-              }
-            ]}
+            className="text-sm font-medium"
+            style={{
+              color: currentValue === option.value
+                ? screenBackgroundColor
+                : screenTextColor,
+            }}
           >
             {option.label}
           </Text>
@@ -139,14 +133,12 @@ export const CustomizationScreen: React.FC = () => {
   );
 
   const renderColorPresets = () => (
-    <View style={styles.colorGrid}>
+    <View className="flex-row flex-wrap gap-3">
       {colorPresets.map((preset) => (
         <TouchableOpacity
           key={preset.name}
-          style={[
-            styles.colorPreset,
-            { backgroundColor: preset.bg, borderColor: preset.accent }
-          ]}
+          className="w-20 h-20 rounded-xl border-2 p-2 items-center justify-between"
+          style={{ backgroundColor: preset.bg, borderColor: preset.accent }}
           onPress={() => dispatch(setColors({
             backgroundColor: preset.bg,
             textColor: preset.text,
@@ -154,8 +146,8 @@ export const CustomizationScreen: React.FC = () => {
             lineColor: preset.line,
           }))}
         >
-          <View style={[styles.colorSwatch, { backgroundColor: preset.accent }]} />
-          <Text style={[styles.colorLabel, { color: preset.text }]}>
+          <View className="w-5 h-5 rounded-full" style={{ backgroundColor: preset.accent }} />
+          <Text className="text-xs font-medium" style={{ color: preset.text }}>
             {preset.name}
           </Text>
         </TouchableOpacity>
@@ -164,35 +156,31 @@ export const CustomizationScreen: React.FC = () => {
   );
 
   const renderFontSizeSlider = () => (
-    <View style={styles.sliderContainer}>
-      <Text style={[styles.sliderLabel, { color: screenTextColor }]}>
+    <View className="gap-3">
+      <Text className="text-base font-medium" style={{ color: screenTextColor }}>
         Font Size: {personalization.fontSize}px
       </Text>
-      <View style={styles.sliderButtons}>
+      <View className="flex-row gap-2">
         {[14, 16, 18, 20, 22, 24].map((size) => (
           <TouchableOpacity
             key={size}
-            style={[
-              styles.sizeButton,
-              {
-                backgroundColor: personalization.fontSize === size 
-                  ? screenAccentColor 
-                  : screenBackgroundColor,
-                borderColor: screenAccentColor,
-              }
-            ]}
+            className="w-10 h-10 rounded-full border items-center justify-center"
+            style={{
+              backgroundColor: personalization.fontSize === size
+                ? screenAccentColor
+                : screenBackgroundColor,
+              borderColor: screenAccentColor,
+            }}
             onPress={() => dispatch(setFontSize(size))}
           >
             <Text
-              style={[
-                styles.sizeText,
-                {
-                  color: personalization.fontSize === size 
-                    ? screenBackgroundColor 
-                    : screenTextColor,
-                  fontSize: size * 0.7,
-                }
-              ]}
+              className="font-semibold"
+              style={{
+                color: personalization.fontSize === size
+                  ? screenBackgroundColor
+                  : screenTextColor,
+                fontSize: size * 0.7,
+              }}
             >
               {size}
             </Text>
@@ -208,41 +196,35 @@ export const CustomizationScreen: React.FC = () => {
     onToggle: () => void,
     description: string
   ) => (
-    <TouchableOpacity style={styles.toggleRow} onPress={onToggle}>
-      <View style={styles.toggleContent}>
-        <Text style={[styles.toggleTitle, { color: screenTextColor }]}>
+    <TouchableOpacity className="flex-row items-center justify-between py-3" onPress={onToggle}>
+      <View className="flex-1">
+        <Text className="text-base font-medium" style={{ color: screenTextColor }}>
           {title}
         </Text>
-        <Text style={[styles.toggleDescription, { color: `${screenTextColor}80` }]}>
+        <Text className="text-sm mt-0.5" style={{ color: `${screenTextColor}80` }}>
           {description}
         </Text>
       </View>
       <View
-        style={[
-          styles.toggle,
-          {
-            backgroundColor: value ? screenAccentColor : `${screenTextColor}20`,
-          }
-        ]}
+        className="w-10 h-6 rounded-full p-0.5 justify-center"
+        style={{ backgroundColor: value ? screenAccentColor : `${screenTextColor}20` }}
       >
         <View
-          style={[
-            styles.toggleKnob,
-            {
-              backgroundColor: personalization.backgroundColor,
-              transform: [{ translateX: value ? 16 : 0 }],
-            }
-          ]}
+          className="w-5 h-5 rounded-full"
+          style={{
+            backgroundColor: personalization.backgroundColor,
+            transform: [{ translateX: value ? 16 : 0 }],
+          }}
         />
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.container, { backgroundColor: screenBackgroundColor }]}> 
-      <View style={[styles.header, { borderBottomColor: `${screenTextColor}20` }]}> 
+    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1" style={{ backgroundColor: screenBackgroundColor }}>
+      <View className="flex-row items-center px-4 py-5 border-b" style={{ minHeight: 56, borderBottomColor: `${screenTextColor}20`, borderBottomWidth: StyleSheet.hairlineWidth }}>
         <TouchableOpacity
-          style={styles.backButton}
+          className="p-2 rounded-full"
           onPress={() => router.back()}
         >
           <MaterialIcons
@@ -251,12 +233,13 @@ export const CustomizationScreen: React.FC = () => {
             color={screenAccentColor}
           />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: screenTextColor }]}> 
+        <Text className="text-lg font-semibold flex-1 text-center" style={{ color: screenTextColor }}>
           Personalization
         </Text>
         {session ? (
           <TouchableOpacity
-            style={[styles.authButton, signingOut && { opacity: 0.7 }]}
+            className="p-2 rounded-lg min-w-[72px] items-end"
+            style={{ opacity: signingOut ? 0.7 : 1 }}
             onPress={handleSignOut}
             accessibilityLabel="Sign out"
             disabled={signingOut}
@@ -264,19 +247,17 @@ export const CustomizationScreen: React.FC = () => {
             {signingOut ? (
               <ActivityIndicator size="small" color={screenAccentColor} />
             ) : (
-              <Text style={[styles.authButtonText, { color: screenAccentColor }]}>Sign out</Text>
+              <Text className="text-sm font-semibold" style={{ color: screenAccentColor }}>Sign out</Text>
             )}
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.authButton} onPress={() => setAuthVisible(true)} accessibilityLabel="Sign in or Sign up">
-            <Text style={[styles.authButtonText, { color: screenAccentColor }]}>Sign in/up</Text>
+          <TouchableOpacity className="p-2 rounded-lg min-w-[72px] items-end" onPress={() => setAuthVisible(true)} accessibilityLabel="Sign in or Sign up">
+            <Text className="text-sm font-semibold" style={{ color: screenAccentColor }}>Sign in/up</Text>
           </TouchableOpacity>
         )}
       </View>
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Background Style section removed - using only blank background */}
-
+      <ScrollView className="flex-1 p-5" showsVerticalScrollIndicator={false}>
         {renderSection('Font Family', 
           renderOptionGrid(fontOptions, personalization.fontFamily, (value) => 
             dispatch(setFontFamily(value))
@@ -284,8 +265,6 @@ export const CustomizationScreen: React.FC = () => {
         )}
 
         {renderSection('Font Size', renderFontSizeSlider())}
-
-        {/* Color Theme moved to quick-access row in JournalScreen */}
 
         {renderSection('App Theme', 
           renderOptionGrid(themeOptions, personalization.theme, (value) => 
@@ -316,141 +295,4 @@ export const CustomizationScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    flex: 1,
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 40, // Same width as back button for center alignment
-  },
-  authButton: {
-    padding: 8,
-    borderRadius: 8,
-    minWidth: 72,
-    alignItems: 'flex-end',
-  },
-  authButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  scrollView: {
-    flex: 1,
-    padding: 20,
-  },
-  section: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 15,
-  },
-  optionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  optionButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  optionText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  colorGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  colorPreset: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    borderWidth: 2,
-    padding: 8,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  colorSwatch: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-  colorLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  sliderContainer: {
-    gap: 12,
-  },
-  sliderLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  sliderButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  sizeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sizeText: {
-    fontWeight: '600',
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-  },
-  toggleContent: {
-    flex: 1,
-  },
-  toggleTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  toggleDescription: {
-    fontSize: 14,
-    marginTop: 2,
-  },
-  toggle: {
-    width: 40,
-    height: 24,
-    borderRadius: 12,
-    padding: 2,
-    justifyContent: 'center',
-  },
-  toggleKnob: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-});
+// Stylesheet removed in favor of NativeWind className utilities and inline dynamic styles

@@ -2,7 +2,6 @@ import React, { useRef } from 'react';
 import {
   PixelRatio,
   Platform,
-  StyleSheet,
   TextInput,
   TextInputProps,
 } from 'react-native';
@@ -116,7 +115,8 @@ export const JournalTextInput: React.FC<JournalTextInputProps> = ({
   return (
     <TextInput
       ref={textInputRef}
-      style={[styles.textInput, textStyle]}
+      className="flex-1"
+      style={[textStyle, { includeFontPadding: false }]}
       value={value !== undefined ? value : initialText}
       onChangeText={onTextChange}
       placeholder="What's on your mind?"
@@ -132,10 +132,3 @@ export const JournalTextInput: React.FC<JournalTextInputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  textInput: {
-    flex: 1,
-    textAlignVertical: 'top',
-    includeFontPadding: false,
-  },
-});

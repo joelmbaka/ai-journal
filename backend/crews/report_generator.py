@@ -12,104 +12,86 @@ from tools.semantic_search import SemanticSearchJournalTool
 search_tool = SemanticSearchJournalTool()
 
 search_agent = Agent(
-    role="Journal Semantic Searcher",
-    goal=(
-        "Use the semantic search tool to fetch the most relevant journal entries for the user, "
-        "returning ONLY the tool's raw JSON output."
-    ),
-    backstory=(
-        "You specialize in retrieving relevant entries using semantic search. Always call the tool with "
-        "the provided inputs and return ONLY the tool's JSON output."
-    ),
+    role="Journal Search Specialist",
+    goal="Retrieve relevant journal entries via semantic search.",
+    backstory="""Use the semantic search tool and set dates appropriately.
+Always use the exact JWT token from crew inputs.
+
+QUERY POLICY (do not paraphrase):
+1) Month/year summary → DATE-ONLY: query=null; start_date=first day; end_date=last day.
+2) 'Latest'/'recent' → RECENCY: keyword like 'goals'|'goal'|'objective'|'OKR'; date window last 1–3 months.
+3) 'When did I <do X>' → No dates unless provided; compact action/topic + synonyms: deploy|deployed|deployment|launch|released + relevant terms (e.g., python, kids app).
+4) Keep queries ≤ 4 words; concrete; prefer nouns/verbs; drop filler.
+5) If results are sparse, try one targeted variant. Do not change authentication or use placeholders.
+""",
     tools=[search_tool],
     llm=llama_scout,
     verbose=True,
-    allow_delegation=False,
+    allow_delegation=True,
+    max_iter=5,
 )
 
 # Report Synthesis Specialist Agent
 report_synthesizer = Agent(
-    role="Insight Synthesis & Report Generation Specialist",
-    goal="Transform raw analysis findings into structured, actionable, and inspiring personal development reports.",
-    backstory="""You are an expert in translating complex psychological and behavioral insights into clear, actionable, and motivating reports. You specialize in:
-    
-    - Creating compelling report narratives that resonate with individuals
-    - Structuring insights in order of importance and relevance
-    - Generating specific, achievable recommendations for personal growth
-    - Balancing honest feedback with encouraging and supportive language
-    - Highlighting progress, strengths, and positive patterns
-    - Identifying areas for improvement without being judgmental
-    - Making complex psychological concepts accessible and practical
-    - Ensuring reports feel personal, relevant, and empowering
-    
-    You understand that people seek self-knowledge to grow and improve, so you craft reports that inspire action while acknowledging current realities.""",
-    llm=llama_scout,
+    role="Report Analysis Specialist",
+    goal="Create structured AIReport from search results with clear insights and recommendations.",
+    backstory="Analyze search results and produce the AIReport with clear, actionable insights. No delegation.",
+    llm=llama_70b,
     verbose=True,
     allow_delegation=False,
+    max_iter=3,
 )
 
-# Step 1: Semantic search task using the tool
+# Step 1: Adaptive semantic search task
 search_task = Task(
-    description=(
-        "Call the tool 'Semantic Search Journal Entries' with EXACTLY these inputs and return ONLY the tool's raw JSON string. No extra text.\n"
-        "query={prompt}\n"
-        "match_count={match_count}\n"
-        "user_token={user_token}"
-    ),
+    description="""Search entries for '{prompt}'. Build an effective query (do not paraphrase).
+
+DECISION RULES:
+- Month summary: DATE-ONLY → query=null; start_date/end_date=month bounds.
+- Latest/recency: concise keyword ('goals'|'goal'|'objective'|'OKR'); 1–3 month window.
+- Event lookup: no date unless provided; focused keywords + synonyms (deploy|deployed|deployment|launch|released + 'python', 'kids app').
+- Keep ≤4 words; prefer nouns/verbs; drop filler. If few results, try one variant.
+
+MANDATORY TOOL PARAMS:
+- query: phrase or null (not 'None' or '')
+- user_token: EXACT '{user_token}'
+- match_count: 10–15 (<=50)
+- start_date/end_date: when time context exists
+
+EXAMPLES:
+- Month summary: {"query": null, "user_token": "{user_token}", "start_date": "2024-11-01", "end_date": "2024-11-30", "match_count": 15}
+- Latest goals: {"query": "goals", "user_token": "{user_token}", "start_date": "<today-2mo>", "end_date": "<today>", "match_count": 15}
+- Event lookup: {"query": "deploy python kids app", "user_token": "{user_token}", "match_count": 15}
+
+Return JSON results (deduplicated) + brief strategy note.""",
     expected_output=(
-        "Exactly the tool's JSON string, e.g. {\"results\": [{\"id\": ..., \"client_id\": ..., \"title\": ..., \"date\": ..., \"similarity\": ...}]}"
-        " or {\"error\": \"...\"}"
+        "JSON with deduplicated search results and strategy summary explaining search approach used."
     ),
     agent=search_agent,
 )
 
-# Step 2: Report generation and synthesis task
+# Step 2: Intelligent analysis and report synthesis task
 generate_report_task = Task(
-    description="""RETURN FORMAT: Return ONLY one JSON object (no code fences, no extra text) that matches the AIReport Pydantic schema exactly.
+    description="""Create the final AIReport for '{prompt}' from search results. Do not delegate.
 
-    Inputs:
-    - USER PROMPT: {prompt}
-    - SEARCH RESULTS (JSON string from previous task)
-    - PREFERRED ANALYSIS TYPES: {preferred_analysis_types}
+Output JSON with fields:
+- title (str)
+- summary (str)
+- key_insights ([str])
+- recommendations ([str])
+- mood_analysis (str|null)
+- confidence_score (float, 0.1–1.0)
+- entries_analyzed (int)
+- prompt_used (str: '{prompt}')
+- keywords ([str]|null)
 
-    Requirements:
-    - Produce a concise, actionable report grounded in the prompt and any valid search results.
-    - Keys must be exactly:
-      title, summary, analysis_type, key_insights, recommendations, mood_patterns (optional),
-      themes_identified (optional), keywords (optional), entries_analyzed, date_range_start (optional),
-      date_range_end (optional), confidence_score, prompt_used, user_focus_areas (optional).
-    
-    NESTED OBJECT SCHEMAS (CRITICAL - use exact field names):
-    - key_insights: Array of objects with exact structure:
-      {"title": "Brief insight title", "description": "Detailed explanation", "confidence": 0.8}
-      DO NOT use "insight" - must be "title" and "description"
-    - recommendations: Array of objects with exact structure:
-      {"action": "Specific action to take", "priority": "medium", "rationale": "Why this is suggested"}
-      DO NOT use "text" - must be "action" and "rationale"
-    - mood_patterns (optional): Array of objects:
-      {"dominant_mood": "optimistic", "trend": "improving", "frequency": 5}
-    
-    - ENUM RULES (strict):
-      - recommendation.priority must be one of: "high", "medium", "low" (lowercase only).
-      - mood_patterns[].trend must be one of: "improving", "declining", "stable", "mixed" (lowercase only).
-    - If unsure, default to: recommendation.priority="medium" and mood_patterns[].trend="mixed".
+Return structured JSON only.""",
 
-    Fallback rules:
-    - If SEARCH RESULTS has an "error" field or is not valid JSON: still produce a valid AIReport using only the USER PROMPT and PREFERRED ANALYSIS TYPES.
-    - In fallback: set entries_analyzed=0, confidence_score in [0.3, 0.6], and omit date_range_start/date_range_end.
-
-    Style:
-    - Personalized, actionable, balanced, and supportive. Keep the summary under 1000 characters.
-    """,
-
-    expected_output=(
-        "A single JSON object strictly conforming to AIReport with clear title, concise summary, 1-5 analysis types, "
-        "3-10 key insights (with confidence), 0-8 actionable recommendations, optional patterns/themes/keywords, "
-        "accurate metadata (entries_analyzed, confidence_score), and the original prompt captured in prompt_used."
-    ),
+    expected_output="Structured AIReport with comprehensive analysis and actionable insights.",
 
     agent=report_synthesizer,
-    context=[search_task],  # Uses output from the semantic search task
+    context=[search_task],
+    output_pydantic=AIReport,
 )
 
 # CrewAI crew for journal report generation (single crew)

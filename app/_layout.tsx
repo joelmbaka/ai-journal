@@ -1,51 +1,34 @@
 import 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import '../global.css';
 import { Tabs } from "expo-router";
-import { ActivityIndicator, Text, View, Appearance } from "react-native";
+import { ActivityIndicator, Text, View, StyleSheet } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Provider, useSelector } from "react-redux";
+import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "../src/store";
 import { DatabaseProvider } from "../src/database/DatabaseProvider";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense } from "react";
 import { MaterialIcons } from '@expo/vector-icons';
-import type { RootState } from "../src/store";
 import { AuthProvider } from "../src/context/AuthContext";
 import { TabTransitionProvider } from "../src/context/TabTransitionContext";
+import { useAppTheme } from "../src/theme/useAppTheme";
 
 // Loading component while Redux state rehydrates
-const LoadingScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F5F5' }}>
-    <ActivityIndicator size="large" color="#007AFF" />
-    <Text style={{ marginTop: 16, color: '#666', fontSize: 14 }}>Loading your journal...</Text>
-  </View>
-);
+const LoadingScreen = () => {
+  const { tokens } = useAppTheme();
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: tokens.colors.background }}>
+      <ActivityIndicator size="large" color={tokens.colors.accent} />
+      <Text style={{ marginTop: 16, color: tokens.colors.muted, fontSize: 14 }}>Loading your journal...</Text>
+    </View>
+  );
+};
 
 // Theme-aware tab navigator
 const ThemedTabs = () => {
-  const { personalization } = useSelector((state: RootState) => state.settings);
-  const [systemColorScheme, setSystemColorScheme] = useState(Appearance.getColorScheme());
-
-  useEffect(() => {
-    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
-      setSystemColorScheme(colorScheme);
-    });
-    return () => subscription?.remove();
-  }, []);
-
-  const getActualTheme = () => {
-    if (personalization.theme === 'auto') {
-      return systemColorScheme === 'dark' ? 'dark' : 'light';
-    }
-    return personalization.theme;
-  };
-
-  const actualTheme = getActualTheme();
-  const tabBarBackgroundColor = actualTheme === 'dark' ? '#000000' : '#FFFFFF';
-  const tabBarBorderColor = actualTheme === 'dark' ? '#38383A' : '#E5E5E7';
-  const tabBarActiveTint = actualTheme === 'dark' ? '#0A84FF' : '#007AFF';
-  const tabBarInactiveTint = actualTheme === 'dark' ? '#8E8E93' : '#8E8E93';
+  const { tokens } = useAppTheme();
 
   return (
     <TabTransitionProvider order={['index','reports','settings']}>
@@ -53,12 +36,12 @@ const ThemedTabs = () => {
         screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: tabBarBackgroundColor,
-          borderTopWidth: 1,
-          borderTopColor: tabBarBorderColor,
+          backgroundColor: tokens.tabBar.background,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: tokens.tabBar.border,
         },
-        tabBarActiveTintColor: tabBarActiveTint,
-        tabBarInactiveTintColor: tabBarInactiveTint,
+        tabBarActiveTintColor: tokens.tabBar.active,
+        tabBarInactiveTintColor: tokens.tabBar.inactive,
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',
